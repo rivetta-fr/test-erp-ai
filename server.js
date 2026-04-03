@@ -717,34 +717,38 @@ app.put('/clients/:id', (req, res) => {
   );
 });
 
+
+
+
 /**
  * DELETE /clients/:id - Supprime un client
  */
 app.delete('/clients/:id', (req, res) => {
   const clientId = req.params.id;
-
   // Vérifier si le client a des commandes actives
-  db.get('SELECT COUNT(*) as orderCount FROM orders WHERE client_id = ?', [clientId], (err, result) => {
-    if (err) {
-      throw err;
-    }
+    db.get('SELECT COUNT(*) as orderCount FROM orders WHERE client_id = ?', [clientId], (err, result) => {
+        if (err) {
+        throw err;
+        }
 
-    if (result.orderCount > 0) {
-      return res.status(400).json({
-        error: 'Impossible de supprimer ce client car il a des commandes associées.'
-      });
-    }
+        if (result.orderCount > 0) {
+        return res.status(400).json({
+            error: 'Impossible de supprimer ce client car il a des commandes associées.'
+        });
+        }
 
-    // Supprimer le client
-    db.run('DELETE FROM clients WHERE id = ?', [clientId], function(err) {
-      if (err) {
-        return console.log('Erreur lors de la suppression du client:', err.message);
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Client non trouvé' });
-      }
-      res.json({ success: true, message: 'Client supprimé avec succès' });
+        // Supprimer le client
+        db.run('DELETE FROM clients WHERE id = ?', [clientId], function(err) {
+        if (err) {
+            return console.log('Erreur lors de la suppression du client:', err.message);
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Client non trouvé' });
+        }
+        res.json({ success: true, message: 'Client supprimé avec succès' });
+        });
     });
+});
 // ========================================
 // ROUTES CRUD COMPLET - CAMIONS
 // ========================================
