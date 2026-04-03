@@ -161,6 +161,48 @@ Truck {
   3. Voir le nom, capacité et statut de chaque camion
 - Validation : Tous les camions sont affichés avec leurs statuts corrects
 
+#### 1.5 Critères d'acceptation
+
+**AC-TRUCK-001 : Créer un camion**
+
+Critères d'acceptation :
+
+- ✓ Formulaire accessible via "Ajouter un camion"
+- ✓ Champs requis : Nom (string), Capacité (number > 0)
+- ✓ Validation côté client (HTML5) et serveur (JS)
+- ✓ Camion créé avec statut "available"
+- ✓ Message de succès affiché
+- ✓ Redirection vers la liste des camions
+- ✓ Nouveau camion visible dans le tableau
+
+**AC-TRUCK-002 : Consulter les camions**
+
+Critères d'acceptation :
+
+- ✓ Page `/trucks` affiche un tableau
+- ✓ Colonnes : ID, Nom, Capacité (kg), Statut
+- ✓ Tous les camions listés (si n > 20, pagination)
+- ✓ Statuts affichés avec badges colorés :
+  - Vert pour "Disponible"
+  - Orange pour "En transit"
+  - Bleu pour "Planifié"
+- ✓ Lien "Retour" vers page d'accueil
+- ✓ Lien "Ajouter un camion" accessible
+
+**AC-TRUCK-003 : Mise à jour automatique du statut**
+
+Critères d'acceptation :
+
+- ✓ Statut du camion = statut de sa dernière commande
+- ✓ Après création commande → camion mis à jour
+- ✓ Après modification horaires → camion mis à jour
+- ✓ Après facturation → camion revient à "available"
+- ✓ Les 4 statuts possibles sont implémentés :
+  - available
+  - scheduled
+  - in_transit
+  - completed
+
 ---
 
 ### MODULE 2 : GESTION DES COMMANDES
@@ -263,6 +305,69 @@ function calculateStatus(departureTime, arrivalTime) {
   4. Filtrer par statut si nécessaire
 - Validation : Tous les statuts affichés correctement
 
+#### 2.6 Critères d'acceptation
+
+**AC-ORDER-001 : Créer une commande**
+
+Critères d'acceptation :
+- ✓ Formulaire accessible via "Ajouter une commande"
+- ✓ Champs requis :
+  - Nom du client (string)
+  - Origine (string - ville/adresse)
+  - Destination (string - ville/adresse)
+  - Camion (select - tous les camions)
+  - Date/Heure départ (datetime-local)
+  - Date/Heure arrivée (datetime-local)
+- ✓ Validation : arrivée > départ
+- ✓ Commande créée avec statut calculé automatiquement
+- ✓ Camion mis à jour et assigné
+- ✓ Redirection vers la liste des commandes
+- ✓ Nouvelle commande visible avec détails corrects
+
+**AC-ORDER-002 : Consulter les commandes**
+
+Critères d'acceptation :
+- ✓ Page `/orders` affiche un tableau ou des cartes
+- ✓ Pour chaque commande, afficher :
+  - ID et Numéro de commande
+  - Nom du client
+  - Trajet (Origine → Destination)
+  - Camion assigné (ou "Non assigné")
+  - Statut dynamique calculé (badge)
+  - Horaires (départ/arrivée)
+- ✓ Badges de statut colorés :
+  - Jaune : "⏳ En attente"
+  - Bleu : "📅 Planifié"
+  - Orange : "🚚 En transit"
+  - Vert : "✓ Complété"
+- ✓ Bouton "Modifier heures" pour chaque commande
+- ✓ Bouton "Facturer" pour commandes "pending" ou "completed"
+- ✓ Lien "Retour" vers page d'accueil
+
+**AC-ORDER-003 : Modifier les horaires**
+
+Critères d'acceptation :
+- ✓ Formulaire de modification accessible via "✏️ Modifier heures"
+- ✓ Champs pré-remplis avec les valeurs actuelles
+- ✓ Permettre modification de départ et arrivée
+- ✓ Validation : arrivée > départ
+- ✓ Après validation :
+  - Commande mise à jour en DB
+  - Statut recalculé dynamiquement
+  - Camion mis à jour
+  - Retour à liste commandes
+- ✓ Bouton "Annuler" ferme le formulaire
+
+**AC-ORDER-004 : Calcul dynamique des statuts**
+
+Critères d'acceptation :
+- ✓ Statut "pending" : pas de dates définies
+- ✓ Statut "scheduled" : départ dans le futur (NOW < départ)
+- ✓ Statut "in_transit" : actuellement en route (NOW ∈ [départ, arrivée])
+- ✓ Statut "completed" : arrivée passée (NOW ≥ arrivée)
+- ✓ Calcul effectué à chaque consultation de la page
+- ✓ Pas de délai observé (calcul immédiat)
+
 ---
 
 ### MODULE 3 : FACTURATION
@@ -312,6 +417,33 @@ Invoice {
   2. Visualiser le tableau de toutes les factures
   3. Voir client, montant et date d'émission
 - Validation : Toutes les factures émises sont listées
+
+#### 3.4 Critères d'acceptation
+
+**AC-INVOICE-001 : Créer une facture**
+
+Critères d'acceptation :
+- ✓ Formulaire facture accessible sur page commandes
+- ✓ Champ "Montant" (number, > 0)
+- ✓ Montant en euros avec 2 décimales
+- ✓ Après validation :
+  - Facture créée en DB avec timestamp
+  - Montant enregistré
+  - Commande marquée "completed"
+  - Camion revient à "available"
+  - Redirection vers `/invoices`
+- ✓ Facture bien créée même si montant avec virgule (ex: 100.50)
+
+**AC-INVOICE-002 : Consulter les factures**
+
+Critères d'acceptation :
+- ✓ Page `/invoices` affiche un tableau
+- ✓ Colonnes : ID Facture, Client, Montant, Date d'émission
+- ✓ Tous les factures listées (si n > 20, pagination)
+- ✓ Montants affichés avec symbole € (ex: "500€")
+- ✓ Dates formatées locale FR (dd/MM/yyyy HH:mm)
+- ✓ Si aucune facture : message "Aucune facture émise"
+- ✓ Lien "Retour" vers page d'accueil
 
 ---
 
