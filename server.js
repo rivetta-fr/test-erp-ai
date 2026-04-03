@@ -24,7 +24,7 @@ const methodOverride = require('method-override');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
+const PORT = 3000;
 
 // Utiliser express-ejs-layouts pour la mise en page globale
 app.use(expressLayouts);
