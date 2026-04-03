@@ -53,8 +53,8 @@ beforeAll(() => {
 
   updateTruckStatus = (truckId, callback) => {
     db.get(
-      `SELECT departure_time, arrival_time FROM orders 
-       WHERE truck_id = ? AND status != 'pending' 
+      `SELECT departure_time, arrival_time, status FROM orders 
+       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit') 
        ORDER BY created_at DESC LIMIT 1`,
       [truckId],
       (err, row) => {
@@ -70,6 +70,18 @@ beforeAll(() => {
 
   return new Promise((resolve) => {
     db.serialize(() => {
+      // Table clients
+      db.run(`CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Table trucks
       db.run(`CREATE TABLE IF NOT EXISTS trucks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -77,9 +89,10 @@ beforeAll(() => {
         status TEXT DEFAULT 'available'
       )`);
 
+      // Table orders (avec client_id)
       db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_name TEXT NOT NULL,
+        client_id INTEGER,
         origin TEXT,
         destination TEXT,
         truck_id INTEGER,
@@ -87,23 +100,43 @@ beforeAll(() => {
         departure_time DATETIME,
         arrival_time DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES clients (id),
         FOREIGN KEY (truck_id) REFERENCES trucks (id)
       )`);
 
+      // Table invoices (avec nouveau schéma)
       db.run(`CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE,
         order_id INTEGER,
-        amount REAL,
+        amount_ht REAL,
+        tva_rate REAL DEFAULT 20.0,
+        tva_amount REAL,
+        amount_ttc REAL,
+        status TEXT DEFAULT 'pending',
         issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (order_id) REFERENCES orders (id)
       )`, () => {
-        resolve();
+        // Créer des données de test
+        db.run('INSERT INTO clients (name, contact_person, email) VALUES (?, ?, ?)', 
+          ['Client Test', 'Jean Dupont', 'jean@test.com'], () => {
+          db.run('INSERT INTO trucks (name, capacity) VALUES (?, ?)', ['Test Truck', 5000], () => {
+            resolve();
+          });
+        });
       });
     });
   });
 });
 
 beforeAll(() => {
+  // Fonction pour générer le numéro de facture
+  const generateInvoiceNumber = () => {
+    const year = new Date().getFullYear();
+    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    return `${year}-${random}`;
+  };
+
   // Route pour créer un camion
   app.post('/trucks', (req, res) => {
     const { name, capacity } = req.body;
@@ -131,15 +164,17 @@ beforeAll(() => {
 
   // Route pour créer une commande
   app.post('/orders', (req, res) => {
-    const { client_name, origin, destination, truck_id, departure_time, arrival_time } = req.body;
+    const { client_id, origin, destination, truck_id, departure_time, arrival_time } = req.body;
 
-    if (!client_name || !origin || !destination || !truck_id || !departure_time || !arrival_time) {
+    if (!client_id || !origin || !destination || !truck_id || !departure_time || !arrival_time) {
       return res.status(400).json({ error: 'Données invalides' });
     }
 
+    const status = calculateStatus(departure_time, arrival_time);
+
     db.run(
-      'INSERT INTO orders (client_name, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [client_name, origin, destination, truck_id, departure_time, arrival_time, 'pending'],
+      'INSERT INTO orders (client_id, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [client_id, origin, destination, truck_id, departure_time, arrival_time, status],
       function(err) {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -148,13 +183,13 @@ beforeAll(() => {
         updateTruckStatus(truck_id, () => {
           res.status(201).json({
             id: this.lastID,
-            client_name,
+            client_id,
             origin,
             destination,
             truck_id,
             departure_time,
             arrival_time,
-            status: 'pending'
+            status
           });
         });
       }
@@ -201,13 +236,18 @@ beforeAll(() => {
   // Route pour créer une facture
   app.post('/invoices/:orderId', (req, res) => {
     const orderId = req.params.orderId;
-    const amount = req.body.amount;
+    const { amount_ht, tva_rate = 20.0 } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Montant invalide' });
+    if (!amount_ht || amount_ht <= 0) {
+      return res.status(400).json({ error: 'Montant HT invalide' });
     }
 
-    db.run('INSERT INTO invoices (order_id, amount) VALUES (?, ?)', [orderId, amount], function(err) {
+    const tva_amount = amount_ht * (tva_rate / 100);
+    const amount_ttc = amount_ht + tva_amount;
+    const invoice_number = generateInvoiceNumber();
+
+    db.run('INSERT INTO invoices (invoice_number, order_id, amount_ht, tva_rate, tva_amount, amount_ttc) VALUES (?, ?, ?, ?, ?, ?)',
+      [invoice_number, orderId, amount_ht, tva_rate, tva_amount, amount_ttc], function(err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -218,8 +258,12 @@ beforeAll(() => {
             updateTruckStatus(order.truck_id, () => {
               res.status(201).json({
                 id: this.lastID,
+                invoice_number,
                 order_id: orderId,
-                amount,
+                amount_ht,
+                tva_rate,
+                tva_amount,
+                amount_ttc,
                 issued_at: new Date().toISOString()
               });
             });
@@ -227,8 +271,12 @@ beforeAll(() => {
         } else {
           res.status(201).json({
             id: this.lastID,
+            invoice_number,
             order_id: orderId,
-            amount,
+            amount_ht,
+            tva_rate,
+            tva_amount,
+            amount_ttc,
             issued_at: new Date().toISOString()
           });
         }
@@ -281,7 +329,7 @@ describe('TC-REG-001 : Workflow complet', () => {
     const orderResponse = await request(app)
       .post('/orders')
       .send({
-        client_name: 'Integration Test Client',
+        client_id: 1,
         origin: 'Paris',
         destination: 'Lyon',
         truck_id: truckId,
@@ -336,11 +384,14 @@ describe('TC-REG-001 : Workflow complet', () => {
     const invoiceResponse = await request(app)
       .post(`/invoices/${orderId}`)
       .send({
-        amount: 500
+        amount_ht: 500
       });
 
     expect(invoiceResponse.status).toBe(201);
-    expect(invoiceResponse.body.amount).toBe(500);
+    expect(invoiceResponse.body.amount_ht).toBe(500);
+    expect(invoiceResponse.body.tva_amount).toBe(100);
+    expect(invoiceResponse.body.amount_ttc).toBe(600);
+    expect(invoiceResponse.body).toHaveProperty('invoice_number');
 
     // Vérifier le camion est revenu à "available"
     const truckFinal = await request(app).get(`/trucks/${truckId}`);

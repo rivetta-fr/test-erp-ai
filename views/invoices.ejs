@@ -11,9 +11,11 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>ID Facture</th>
+        <th>N° Facture</th>
         <th>Client</th>
-        <th>Montant</th>
+        <th>Montant HT</th>
+        <th>TVA (20%)</th>
+        <th>Montant TTC</th>
         <th>Statut</th>
         <th>Date d'émission</th>
         <th>Actions</th>
@@ -22,9 +24,11 @@
     <tbody>
       <% invoices.forEach(invoice => { %>
         <tr>
-          <td>#<%= invoice.id %></td>
+          <td><strong><%= invoice.invoice_number %></strong></td>
           <td><%= invoice.client_name %></td>
-          <td style="font-weight: bold; color: #66bb6a;"><%= invoice.amount %> €</td>
+          <td><%= invoice.amount_ht %> €</td>
+          <td><%= invoice.tva_amount %> €</td>
+          <td><strong><%= invoice.amount_ttc %> €</strong></td>
           <td>
             <span class="status-badge status-<%= invoice.status %>">
               <% if (invoice.status === 'pending') { %>⏳ En attente

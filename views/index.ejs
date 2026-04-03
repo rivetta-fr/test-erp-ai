@@ -5,7 +5,16 @@
 
 <div class="dashboard-grid">
   <div class="dashboard-card">
-    <h3>🚛 Gestion des Camions</h3>
+    <h3>� Gestion des Clients</h3>
+    <p>Gérer votre base de clients : ajouter, consulter et suivre vos relations commerciales.</p>
+    <div class="content-nav">
+      <a href="/clients">Voir les Clients</a>
+      <a href="/clients/add" class="secondary">Ajouter un Client</a>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <h3>�🚛 Gestion des Camions</h3>
     <p>Gérer votre flotte de véhicules : ajouter, modifier et suivre l'état de vos camions.</p>
     <div class="content-nav">
       <a href="/trucks">Voir les Camions</a>
@@ -34,7 +43,7 @@
 <style>
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 25px;
     margin-top: 30px;
   }

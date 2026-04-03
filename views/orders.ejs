@@ -9,52 +9,80 @@
 
 <% if (orders && orders.length > 0) { %>
   <% orders.forEach(order => { %>
-    <div class="order-details">
-      <h3>Commande #<%= order.id %> - <%= order.client_name %></h3>
-      <p><strong>Trajet:</strong> <%= order.origin %> → <%= order.destination %></p>
-      <p><strong>Camion:</strong> <%= order.truck_name || 'Non assigné' %></p>
-      <p>
-        <strong>Statut:</strong>
-        <span class="status-badge status-<%= order.dynamic_status %>">
-          <% if (order.dynamic_status === 'pending') { %>⏳ En attente
-          <% } else if (order.dynamic_status === 'scheduled') { %>📅 Planifié
-          <% } else if (order.dynamic_status === 'in_transit') { %>🚚 En transit
-          <% } else if (order.dynamic_status === 'completed') { %>✓ Complété
+    <div class="order-card">
+      <div class="order-header">
+        <div class="order-title">
+          <h3>📦 Commande #<%= order.id %></h3>
+          <span class="client-name"><%= order.client_name %></span>
+        </div>
+        <div class="order-status">
+          <span class="status-badge status-<%= order.dynamic_status %>">
+            <% if (order.dynamic_status === 'pending') { %>⏳ En attente
+            <% } else if (order.dynamic_status === 'scheduled') { %>📅 Planifié
+            <% } else if (order.dynamic_status === 'in_transit') { %>🚚 En transit
+            <% } else if (order.dynamic_status === 'completed') { %>✓ Complété
+            <% } %>
+          </span>
+        </div>
+      </div>
+
+      <div class="order-content">
+        <div class="order-info-grid">
+          <div class="info-item">
+            <div class="info-label">🚛 Camion</div>
+            <div class="info-value"><%= order.truck_name || 'Non assigné' %></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">📍 Trajet</div>
+            <div class="info-value"><%= order.origin %> → <%= order.destination %></div>
+          </div>
+          <% if (order.departure_time) { %>
+            <div class="info-item">
+              <div class="info-label">🕐 Départ</div>
+              <div class="info-value"><%= new Date(order.departure_time).toLocaleString('fr-FR') %></div>
+            </div>
           <% } %>
-        </span>
-      </p>
+          <% if (order.arrival_time) { %>
+            <div class="info-item">
+              <div class="info-label">🕐 Arrivée</div>
+              <div class="info-value"><%= new Date(order.arrival_time).toLocaleString('fr-FR') %></div>
+            </div>
+          <% } %>
+        </div>
 
-      <% if (order.departure_time) { %>
-        <p><strong>Départ:</strong> <%= new Date(order.departure_time).toLocaleString('fr-FR') %></p>
-      <% } %>
-      <% if (order.arrival_time) { %>
-        <p><strong>Arrivée:</strong> <%= new Date(order.arrival_time).toLocaleString('fr-FR') %></p>
-      <% } %>
+        <div class="order-actions">
+          <button class="btn-update toggle-time-btn" data-order-id="<%= order.id %>">✏️ Modifier heures</button>
 
-      <button class="btn-update" onclick="toggleTimeForm(<%= order.id %>)">✏️ Modifier heures</button>
+          <% if (order.dynamic_status === 'pending' && !order.departure_time) { %>
+            <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
+              <input type="number" name="amount" placeholder="Montant HT (€)" step="0.01" required style="width: 140px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 8px;">
+              <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer (HT)</button>
+            </form>
+          <% } else if (order.dynamic_status === 'completed' && order.status !== 'completed') { %>
+            <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
+              <input type="number" name="amount" placeholder="Montant HT (€)" step="0.01" required style="width: 140px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 8px;">
+              <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer (HT)</button>
+            </form>
+          <% } %>
+        </div>
 
-      <form id="time-form-<%= order.id %>" class="time-form" action="/orders/<%= order.id %>/update-times" method="POST">
-        <label for="departure-<%= order.id %>">Départ (date/heure):</label>
-        <input type="datetime-local" id="departure-<%= order.id %>" name="departure_time" value="<%= order.departure_time ? order.departure_time.replace(' ', 'T') : '' %>" required>
-
-        <label for="arrival-<%= order.id %>">Arrivée (date/heure):</label>
-        <input type="datetime-local" id="arrival-<%= order.id %>" name="arrival_time" value="<%= order.arrival_time ? order.arrival_time.replace(' ', 'T') : '' %>" required>
-
-        <button type="submit" class="btn-update">💾 Enregistrer</button>
-        <button type="button" class="btn-update" onclick="toggleTimeForm(<%= order.id %>)" style="background-color: #999;">Annuler</button>
-      </form>
-
-      <% if (order.dynamic_status === 'pending' && !order.departure_time) { %>
-        <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
-          <input type="number" name="amount" placeholder="Montant" step="0.01" required style="width: 120px; padding: 8px;">
-          <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer</button>
+        <form id="time-form-<%= order.id %>" class="time-form" action="/orders/<%= order.id %>/update-times" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="departure-<%= order.id %>">Départ (date/heure):</label>
+              <input type="datetime-local" id="departure-<%= order.id %>" name="departure_time" value="<%= order.departure_time ? order.departure_time.replace(' ', 'T') : '' %>" required>
+            </div>
+            <div class="form-group">
+              <label for="arrival-<%= order.id %>">Arrivée (date/heure):</label>
+              <input type="datetime-local" id="arrival-<%= order.id %>" name="arrival_time" value="<%= order.arrival_time ? order.arrival_time.replace(' ', 'T') : '' %>" required>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-update">💾 Enregistrer</button>
+            <button type="button" class="btn-update toggle-time-btn" data-order-id="<%= order.id %>" style="background-color: #999;">Annuler</button>
+          </div>
         </form>
-      <% } else if (order.dynamic_status === 'completed' && order.status !== 'completed') { %>
-        <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
-          <input type="number" name="amount" placeholder="Montant" step="0.01" required style="width: 120px; padding: 8px;">
-          <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer</button>
-        </form>
-      <% } %>
+      </div>
     </div>
   <% }); %>
 <% } else { %>
@@ -65,76 +93,202 @@
 <% } %>
 
 <style>
-  .order-details {
-    background-color: #f9f9f9;
-    padding: 20px;
-    margin: 15px 0;
-    border-radius: 12px;
-    border-left: 4px solid #1976d2;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  .order-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin: 20px 0;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
   }
 
-  .order-details h3 {
-    margin: 0 0 15px 0;
+  .order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+
+  .order-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .order-title h3 {
+    margin: 0;
     color: #333;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .client-name {
+    display: block;
+    color: #666;
+    font-size: 1rem;
+    font-weight: 400;
+    margin-top: 4px;
+  }
+
+  .order-status {
+    flex-shrink: 0;
+  }
+
+  .order-content {
+    padding: 25px;
+  }
+
+  .order-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .info-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 3px solid #1976d2;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-value {
+    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .order-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
   }
 
   .time-form {
-    background-color: white;
+    background: #f8f9fa;
     padding: 20px;
-    margin-top: 15px;
-    border-radius: 8px;
-    display: none;
+    border-radius: 12px;
     border: 1px solid #e0e0e0;
+    display: none;
   }
 
   .time-form.show {
     display: block;
   }
 
-  .time-form input {
-    margin-bottom: 12px;
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
   }
 
-  .time-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    font-weight: 600;
     color: #555;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+
+  .form-group input {
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
   }
 
   .btn-update {
     background-color: #66bb6a;
     color: white;
-    padding: 10px 16px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
-    margin-right: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .btn-update:hover {
     background-color: #4caf50;
     transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
 
   .status-pending { background-color: #fff9c4; color: #f57f17; }
   .status-scheduled { background-color: #e1f5fe; color: #0277bd; }
   .status-in_transit { background-color: #fff3e0; color: #e65100; }
   .status-completed { background-color: #e8f5e9; color: #2e7d32; }
+
+  @media (max-width: 768px) {
+    .order-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .order-info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .order-actions {
+      flex-direction: column;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+  }
 </style>
 
 <script>
   function toggleTimeForm(orderId) {
     const form = document.getElementById(`time-form-${orderId}`);
+    if (!form) return;
     form.classList.toggle('show');
   }
+
+  document.querySelectorAll('.toggle-time-btn').forEach(button => {
+    button.addEventListener('click', (event) => {
+      const orderId = button.getAttribute('data-order-id');
+      toggleTimeForm(orderId);
+    });
+  });
 </script>

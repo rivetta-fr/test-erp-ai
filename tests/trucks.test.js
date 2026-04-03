@@ -61,8 +61,8 @@ beforeAll(() => {
 
   updateTruckStatus = (truckId, callback) => {
     db.get(
-      `SELECT departure_time, arrival_time FROM orders 
-       WHERE truck_id = ? AND status != 'pending' 
+      `SELECT departure_time, arrival_time, status FROM orders 
+       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit') 
        ORDER BY created_at DESC LIMIT 1`,
       [truckId],
       (err, row) => {
@@ -76,9 +76,21 @@ beforeAll(() => {
     );
   };
 
-  // Créer les tables
+  // Créer les tables avec le nouveau schéma
   return new Promise((resolve) => {
     db.serialize(() => {
+      // Table clients
+      db.run(`CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Table trucks
       db.run(`CREATE TABLE IF NOT EXISTS trucks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -86,9 +98,10 @@ beforeAll(() => {
         status TEXT DEFAULT 'available'
       )`);
 
+      // Table orders (avec client_id)
       db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_name TEXT NOT NULL,
+        client_id INTEGER,
         origin TEXT,
         destination TEXT,
         truck_id INTEGER,
@@ -96,8 +109,32 @@ beforeAll(() => {
         departure_time DATETIME,
         arrival_time DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES clients (id),
         FOREIGN KEY (truck_id) REFERENCES trucks (id)
       )`);
+
+      // Table invoices (avec nouveau schéma)
+      db.run(`CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE,
+        order_id INTEGER,
+        amount_ht REAL,
+        tva_rate REAL DEFAULT 20.0,
+        tva_amount REAL,
+        amount_ttc REAL,
+        status TEXT DEFAULT 'pending',
+        issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders (id)
+      )`);
+
+      // Insérer des données de test
+      db.run(`INSERT INTO clients (name, contact_person, email) VALUES
+        ('Client Test 1', 'Jean Dupont', 'jean@test.com'),
+        ('Client Test 2', 'Marie Martin', 'marie@test.com')`);
+
+      resolve();
+    });
+  });
 
       db.run(`CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

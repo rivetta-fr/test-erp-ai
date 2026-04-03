@@ -64,11 +64,31 @@ const db = new sqlite3.Database('./erp.db', (err) => {
 
 /**
  * Tables créées :
- * 1. trucks - Gestion des véhicules de transport
- * 2. orders - Gestion des commandes de transport
- * 3. invoices - Gestion de la facturation
+ * 1. clients - Gestion des clients
+ * 2. trucks - Gestion des véhicules de transport
+ * 3. orders - Gestion des commandes de transport
+ * 4. invoices - Gestion de la facturation
  */
 db.serialize(() => {
+  // Table CLIENTS : Stocke les informations des clients
+  // Colonnes :
+  // - id : Identifiant unique du client
+  // - name : Nom de l'entreprise cliente
+  // - contact_person : Personne de contact
+  // - email : Adresse email
+  // - phone : Numéro de téléphone
+  // - address : Adresse
+  // - created_at : Timestamp de création
+  db.run(`CREATE TABLE IF NOT EXISTS clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    contact_person TEXT,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Table TRUCKS : Stocke les informations des camions
   // Colonnes :
   // - id : Identifiant unique du camion
@@ -85,7 +105,7 @@ db.serialize(() => {
   // Table ORDERS : Stocke les commandes de transport
   // Colonnes :
   // - id : Identifiant unique de la commande
-  // - client_name : Nom du client ayant passé la commande
+  // - client_id : Référence au client
   // - origin : Lieu de départ
   // - destination : Lieu d'arrivée
   // - truck_id : Référence au camion assigné à cette commande
@@ -95,7 +115,7 @@ db.serialize(() => {
   // - created_at : Timestamp de création de la commande
   db.run(`CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_name TEXT NOT NULL,
+    client_id INTEGER,
     origin TEXT,
     destination TEXT,
     truck_id INTEGER,
@@ -103,19 +123,30 @@ db.serialize(() => {
     departure_time DATETIME,
     arrival_time DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients (id),
     FOREIGN KEY (truck_id) REFERENCES trucks (id)
   )`);
 
   // Table INVOICES : Stocke les factures générées
   // Colonnes :
   // - id : Identifiant unique de la facture
+  // - invoice_number : Numéro de facture (format: ANNEE-XXXXX)
   // - order_id : Référence à la commande facturée
-  // - amount : Montant de la facture en euros
+  // - amount_ht : Montant HT en euros
+  // - tva_rate : Taux de TVA (par défaut 20%)
+  // - tva_amount : Montant de la TVA
+  // - amount_ttc : Montant TTC
+  // - status : Statut de la facture (pending, paid, overdue)
   // - issued_at : Timestamp d'émission de la facture
   db.run(`CREATE TABLE IF NOT EXISTS invoices (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_number TEXT UNIQUE,
     order_id INTEGER,
-    amount REAL,
+    amount_ht REAL,
+    tva_rate REAL DEFAULT 20.0,
+    tva_amount REAL,
+    amount_ttc REAL,
+    status TEXT DEFAULT 'pending',
     issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders (id)
   )`);
@@ -124,6 +155,37 @@ db.serialize(() => {
 // ========================================
 // FONCTIONS UTILITAIRES DE GESTION DES STATUTS
 // ========================================
+
+/**
+ * Génère un numéro de facture unique au format ANNEE-XXXXX
+ * @returns {string} Numéro de facture formaté
+ */
+function generateInvoiceNumber() {
+  const year = new Date().getFullYear();
+
+  // Récupérer le dernier numéro de facture de l'année
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1",
+      [`${year}-%`],
+      (err, row) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        let sequence = 1;
+        if (row && row.invoice_number) {
+          const lastSequence = parseInt(row.invoice_number.split('-')[1]);
+          sequence = lastSequence + 1;
+        }
+
+        const invoiceNumber = `${year}-${sequence.toString().padStart(5, '0')}`;
+        resolve(invoiceNumber);
+      }
+    );
+  });
+}
 
 /**
  * Calcule le statut dynamique d'une commande basé sur la date/heure actuelle
@@ -267,28 +329,48 @@ app.post('/trucks', (req, res) => {
  * et calcule le statut dynamique de chaque commande
  */
 app.get('/orders', (req, res) => {
-  db.all(`SELECT orders.*, trucks.name as truck_name FROM orders LEFT JOIN trucks ON orders.truck_id = trucks.id`, [], (err, rows) => {
-    if (err) {
-      throw err;
+  db.all(
+    `SELECT orders.*, trucks.name as truck_name, clients.name as client_name
+     FROM orders
+     LEFT JOIN trucks ON orders.truck_id = trucks.id
+     LEFT JOIN clients ON orders.client_id = clients.id
+     ORDER BY orders.created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) {
+        throw err;
+      }
+
+      // Calculer le statut dynamique pour chaque commande basé sur l'heure actuelle
+      const ordersWithStatus = rows.map(order => {
+        order.dynamic_status = calculateStatus(order.departure_time, order.arrival_time);
+        return order;
+      });
+
+      res.render('orders', { orders: ordersWithStatus, currentPage: 'orders' });
     }
-    
-    // Calculer le statut dynamique pour chaque commande basé sur l'heure actuelle
-    const ordersWithStatus = rows.map(order => {
-      order.dynamic_status = calculateStatus(order.departure_time, order.arrival_time);
-      return order;
-    });
-    
-    res.render('orders', { orders: ordersWithStatus, currentPage: 'orders' });
-  });
+  );
 });
 
 /**
  * GET /orders/add - Affiche le formulaire d'ajout d'une commande
- * Récupère tous les camions disponibles pour la sélection
+ * Récupère tous les camions et clients disponibles pour la sélection
  */
 app.get('/orders/add', (req, res) => {
+  // Récupérer les camions disponibles
   db.all('SELECT * FROM trucks', [], (err, trucks) => {
-    res.render('add-order', { trucks, currentPage: 'add-order' });
+    if (err) {
+      throw err;
+    }
+
+    // Récupérer les clients
+    db.all('SELECT * FROM clients ORDER BY name', [], (err, clients) => {
+      if (err) {
+        throw err;
+      }
+
+      res.render('add-order', { trucks, clients, currentPage: 'add-order' });
+    });
   });
 });
 
@@ -310,16 +392,16 @@ app.get('/orders/add', (req, res) => {
  * 4. Redirige vers la liste des commandes
  */
 app.post('/orders', (req, res) => {
-  const { client_name, origin, destination, truck_id, departure_time, arrival_time } = req.body;
-  
+  const { client_id, origin, destination, truck_id, departure_time, arrival_time } = req.body;
+
   db.run(
-    'INSERT INTO orders (client_name, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-    [client_name, origin, destination, truck_id, departure_time, arrival_time, 'pending'], 
+    'INSERT INTO orders (client_id, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [client_id, origin, destination, truck_id, departure_time, arrival_time, 'pending'],
     function(err) {
       if (err) {
         return console.log('Erreur lors de la création de la commande:', err.message);
       }
-      
+
       // Mettre à jour le statut du camion en fonction de la nouvelle commande
       updateTruckStatus(truck_id, () => {
         res.redirect('/orders');
@@ -334,55 +416,99 @@ app.post('/orders', (req, res) => {
 
 /**
  * GET /invoices - Liste toutes les factures
- * Récupère toutes les factures avec les informations du client
+ * Récupère toutes les factures avec les informations du client et de la commande
  */
 app.get('/invoices', (req, res) => {
-  db.all(`SELECT invoices.*, orders.client_name FROM invoices JOIN orders ON invoices.order_id = orders.id`, [], (err, rows) => {
-    if (err) {
-      throw err;
+  db.all(
+    `SELECT invoices.*, orders.id as order_id, clients.name as client_name
+     FROM invoices
+     JOIN orders ON invoices.order_id = orders.id
+     JOIN clients ON orders.client_id = clients.id
+     ORDER BY invoices.issued_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) {
+        throw err;
+      }
+      res.render('invoices', { invoices: rows, currentPage: 'invoices' });
     }
-    res.render('invoices', { invoices: rows, currentPage: 'invoices' });
-  });
+  );
 });
 
 /**
  * POST /invoices/:orderId - Crée une facture pour une commande
- * 
+ *
  * Paramètres :
  * - orderId : ID de la commande à facturer (URL parameter)
- * - amount : Montant de la facture (form data, number)
- * 
+ * - amount_ht : Montant HT de la facture (form data, number)
+ *
  * Logique :
- * 1. Crée la facture avec le montant spécifié
- * 2. Récupère le truck_id de la commande
- * 3. Marque la commande comme 'completed'
- * 4. Met à jour le statut du camion
- * 5. Redirige vers la page des factures
+ * 1. Génère un numéro de facture unique
+ * 2. Calcule la TVA (20%) et le TTC
+ * 3. Crée la facture avec tous les montants
+ * 4. Marque la commande comme 'completed'
+ * 5. Met à jour le statut du camion
+ * 6. Redirige vers la page des factures
  */
-app.post('/invoices/:orderId', (req, res) => {
+app.post('/invoices/:orderId', async (req, res) => {
   const orderId = req.params.orderId;
-  const amount = req.body.amount;
-  
-  // Insérer la nouvelle facture
-  db.run('INSERT INTO invoices (order_id, amount) VALUES (?, ?)', [orderId, amount], function(err) {
-    if (err) {
-      return console.log('Erreur lors de la création de la facture:', err.message);
-    }
-    
-    // Récupérer l'ID du camion pour mettre à jour son statut
-    db.get('SELECT truck_id FROM orders WHERE id = ?', [orderId], (err, order) => {
-      if (order) {
-        // Marquer la commande comme complétée
-        db.run('UPDATE orders SET status = ? WHERE id = ?', ['completed', orderId], () => {
-          // Mettre à jour le statut du camion
-          updateTruckStatus(order.truck_id, () => {
+  const amountHt = parseFloat(req.body.amount);
+
+  try {
+    // Générer le numéro de facture
+    const invoiceNumber = await generateInvoiceNumber();
+
+    // Calculer TVA et TTC
+    const tvaRate = 20.0;
+    const tvaAmount = amountHt * (tvaRate / 100);
+    const amountTtc = amountHt + tvaAmount;
+
+    // Insérer la nouvelle facture
+    db.run(
+      'INSERT INTO invoices (invoice_number, order_id, amount_ht, tva_rate, tva_amount, amount_ttc) VALUES (?, ?, ?, ?, ?, ?)',
+      [invoiceNumber, orderId, amountHt, tvaRate, tvaAmount, amountTtc],
+      function(err) {
+        if (err) {
+          return console.log('Erreur lors de la création de la facture:', err.message);
+        }
+
+        // Récupérer l'ID du camion pour mettre à jour son statut
+        db.get('SELECT truck_id FROM orders WHERE id = ?', [orderId], (err, order) => {
+          if (order) {
+            // Marquer la commande comme complétée
+            db.run('UPDATE orders SET status = ? WHERE id = ?', ['completed', orderId], () => {
+              // Mettre à jour le statut du camion
+              updateTruckStatus(order.truck_id, () => {
+                res.redirect('/invoices');
+              });
+            });
+          } else {
             res.redirect('/invoices');
-          });
+          }
         });
-      } else {
-        res.redirect('/invoices');
       }
-    });
+    );
+  } catch (error) {
+    console.log('Erreur lors de la génération du numéro de facture:', error.message);
+    res.redirect('/orders');
+  }
+});
+
+// ========================================
+// ROUTES - PAIEMENT DES FACTURES
+// ========================================
+
+/**
+ * POST /invoices/:id/pay - Marque une facture comme payée
+ */
+app.post('/invoices/:id/pay', (req, res) => {
+  const invoiceId = req.params.id;
+
+  db.run('UPDATE invoices SET status = ? WHERE id = ?', ['paid', invoiceId], function(err) {
+    if (err) {
+      return console.log('Erreur lors du paiement de la facture:', err.message);
+    }
+    res.redirect('/invoices');
   });
 });
 
@@ -423,6 +549,89 @@ app.post('/orders/:orderId/update-times', (req, res) => {
         // Mettre à jour le statut du camion
         updateTruckStatus(order.truck_id, () => {
           res.redirect('/orders');
+        });
+      }
+    );
+  });
+});
+
+// ========================================
+// ROUTES - GESTION DES CLIENTS
+// ========================================
+
+/**
+ * GET /clients - Liste tous les clients
+ * Récupère tous les clients de la base de données
+ */
+app.get('/clients', (req, res) => {
+  db.all('SELECT * FROM clients ORDER BY name', [], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    res.render('clients', { clients: rows, currentPage: 'clients' });
+  });
+});
+
+/**
+ * GET /clients/add - Affiche le formulaire d'ajout d'un client
+ */
+app.get('/clients/add', (req, res) => {
+  res.render('add-client', { currentPage: 'add-client' });
+});
+
+/**
+ * POST /clients - Crée un nouveau client
+ */
+app.post('/clients', (req, res) => {
+  const { name, contact_person, email, phone, address } = req.body;
+  db.run(
+    'INSERT INTO clients (name, contact_person, email, phone, address) VALUES (?, ?, ?, ?, ?)',
+    [name, contact_person, email, phone, address],
+    function(err) {
+      if (err) {
+        return console.log('Erreur lors de l\'ajout du client:', err.message);
+      }
+      res.redirect('/clients');
+    }
+  );
+});
+
+/**
+ * GET /clients/:id - Affiche les détails d'un client
+ */
+app.get('/clients/:id', (req, res) => {
+  const clientId = req.params.id;
+  db.get('SELECT * FROM clients WHERE id = ?', [clientId], (err, client) => {
+    if (err) {
+      throw err;
+    }
+    if (!client) {
+      return res.status(404).send('Client non trouvé');
+    }
+
+    // Récupérer les commandes du client
+    db.all(
+      `SELECT orders.*, trucks.name as truck_name
+       FROM orders
+       LEFT JOIN trucks ON orders.truck_id = trucks.id
+       WHERE orders.client_id = ?
+       ORDER BY orders.created_at DESC`,
+      [clientId],
+      (err, orders) => {
+        if (err) {
+          throw err;
+        }
+
+        // Calculer le statut dynamique pour chaque commande
+        const ordersWithStatus = orders.map(order => {
+          order.dynamic_status = calculateStatus(order.departure_time, order.arrival_time);
+          return order;
+        });
+
+        res.render('client-detail', {
+          client,
+          orders: ordersWithStatus,
+          currentPage: 'clients'
         });
       }
     );

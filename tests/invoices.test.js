@@ -54,8 +54,8 @@ beforeAll(() => {
 
   updateTruckStatus = (truckId, callback) => {
     db.get(
-      `SELECT departure_time, arrival_time FROM orders 
-       WHERE truck_id = ? AND status != 'pending' 
+      `SELECT departure_time, arrival_time, status FROM orders 
+       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit') 
        ORDER BY created_at DESC LIMIT 1`,
       [truckId],
       (err, row) => {
@@ -71,6 +71,18 @@ beforeAll(() => {
 
   return new Promise((resolve) => {
     db.serialize(() => {
+      // Table clients
+      db.run(`CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Table trucks
       db.run(`CREATE TABLE IF NOT EXISTS trucks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -78,9 +90,10 @@ beforeAll(() => {
         status TEXT DEFAULT 'available'
       )`);
 
+      // Table orders (avec client_id)
       db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_name TEXT NOT NULL,
+        client_id INTEGER,
         origin TEXT,
         destination TEXT,
         truck_id INTEGER,
@@ -88,16 +101,38 @@ beforeAll(() => {
         departure_time DATETIME,
         arrival_time DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES clients (id),
         FOREIGN KEY (truck_id) REFERENCES trucks (id)
       )`);
 
+      // Table invoices (avec nouveau schéma)
       db.run(`CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE,
         order_id INTEGER,
-        amount REAL,
+        amount_ht REAL,
+        tva_rate REAL DEFAULT 20.0,
+        tva_amount REAL,
+        amount_ttc REAL,
+        status TEXT DEFAULT 'pending',
         issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (order_id) REFERENCES orders (id)
       )`, () => {
+        // Créer un client de test
+        db.run('INSERT INTO clients (name, contact_person, email) VALUES (?, ?, ?)', 
+          ['Client Test', 'Jean Dupont', 'jean@test.com'], () => {
+          // Créer un camion de test
+          db.run('INSERT INTO trucks (name, capacity) VALUES (?, ?)', ['Test Truck', 5000], () => {
+            // Créer une commande de test
+            db.run('INSERT INTO orders (client_id, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              [1, 'Paris', 'Lyon', 1, '2024-01-01 10:00:00', '2024-01-01 14:00:00', 'completed'], () => {
+              resolve();
+            });
+          });
+        });
+      });
+    });
+  });
         // Créer un camion et une commande de test
         db.run('INSERT INTO trucks (name, capacity) VALUES (?, ?)', ['Test Truck', 5000], () => {
           const past = new Date();
@@ -113,16 +148,15 @@ beforeAll(() => {
               resolve();
             }
           );
-        });
-      });
-    });
-  });
 });
 
 beforeAll(() => {
   // GET /invoices - Liste toutes les factures
   app.get('/invoices', (req, res) => {
-    db.all(`SELECT invoices.*, orders.client_name FROM invoices JOIN orders ON invoices.order_id = orders.id`, [], (err, rows) => {
+    db.all(`SELECT invoices.*, orders.origin, orders.destination, clients.name as client_name 
+            FROM invoices 
+            JOIN orders ON invoices.order_id = orders.id 
+            JOIN clients ON orders.client_id = clients.id`, [], (err, rows) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -130,17 +164,29 @@ beforeAll(() => {
     });
   });
 
+  // Fonction pour générer le numéro de facture
+  const generateInvoiceNumber = () => {
+    const year = new Date().getFullYear();
+    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    return `${year}-${random}`;
+  };
+
   // POST /invoices/:orderId - Créer une facture
   app.post('/invoices/:orderId', (req, res) => {
     const orderId = req.params.orderId;
-    const amount = req.body.amount;
+    const { amount_ht, tva_rate = 20.0 } = req.body;
 
     // Validation
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Montant doit être positif' });
+    if (!amount_ht || amount_ht <= 0) {
+      return res.status(400).json({ error: 'Montant HT doit être positif' });
     }
 
-    db.run('INSERT INTO invoices (order_id, amount) VALUES (?, ?)', [orderId, amount], function(err) {
+    const tva_amount = amount_ht * (tva_rate / 100);
+    const amount_ttc = amount_ht + tva_amount;
+    const invoice_number = generateInvoiceNumber();
+
+    db.run('INSERT INTO invoices (invoice_number, order_id, amount_ht, tva_rate, tva_amount, amount_ttc) VALUES (?, ?, ?, ?, ?, ?)', 
+      [invoice_number, orderId, amount_ht, tva_rate, tva_amount, amount_ttc], function(err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -151,8 +197,12 @@ beforeAll(() => {
             updateTruckStatus(order.truck_id, () => {
               res.status(201).json({
                 id: this.lastID,
+                invoice_number,
                 order_id: orderId,
-                amount,
+                amount_ht,
+                tva_rate,
+                tva_amount,
+                amount_ttc,
                 issued_at: new Date().toISOString()
               });
             });
@@ -160,8 +210,12 @@ beforeAll(() => {
         } else {
           res.status(201).json({
             id: this.lastID,
+            invoice_number,
             order_id: orderId,
-            amount,
+            amount_ht,
+            tva_rate,
+            tva_amount,
+            amount_ttc,
             issued_at: new Date().toISOString()
           });
         }
@@ -190,48 +244,53 @@ describe('TC-INVOICE-001 : Créer une facture', () => {
     const response = await request(app)
       .post('/invoices/1')
       .send({
-        amount: 500
+        amount_ht: 500
       });
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('id');
+    expect(response.body).toHaveProperty('invoice_number');
     expect(response.body.order_id).toBe(1);
-    expect(response.body.amount).toBe(500);
+    expect(response.body.amount_ht).toBe(500);
+    expect(response.body.tva_rate).toBe(20.0);
+    expect(response.body.tva_amount).toBe(100);
+    expect(response.body.amount_ttc).toBe(600);
     expect(response.body).toHaveProperty('issued_at');
   });
 
-  test('Doit rejeter montant zéro', async () => {
+  test('Doit rejeter montant HT zéro', async () => {
     const response = await request(app)
       .post('/invoices/1')
       .send({
-        amount: 0
+        amount_ht: 0
       });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('positif');
   });
 
-  test('Doit rejeter montant négatif', async () => {
+  test('Doit rejeter montant HT négatif', async () => {
     const response = await request(app)
       .post('/invoices/1')
       .send({
-        amount: -100
+        amount_ht: -100
       });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('positif');
   });
 
-  test('Doit accepter montant avec décimales', async () => {
+  test('Doit accepter montant HT avec décimales', async () => {
     const response = await request(app)
       .post('/invoices/1')
       .send({
-        amount: 100.50
+        amount_ht: 100.50
       });
 
     expect(response.status).toBe(201);
-    expect(response.body.amount).toBe(100.50);
-  });
+    expect(response.body.amount_ht).toBe(100.50);
+    expect(response.body.tva_amount).toBe(20.1);
+    expect(response.body.amount_ttc).toBe(120.6);
 });
 
 // ========================================
@@ -243,7 +302,7 @@ describe('TC-INVOICE-002 : Afficher toutes les factures', () => {
     await request(app)
       .post('/invoices/1')
       .send({
-        amount: 250
+        amount_ht: 250
       });
 
     const response = await request(app).get('/invoices');
@@ -260,8 +319,12 @@ describe('TC-INVOICE-002 : Afficher toutes les factures', () => {
     if (response.body.length > 0) {
       response.body.forEach(invoice => {
         expect(invoice).toHaveProperty('id');
+        expect(invoice).toHaveProperty('invoice_number');
         expect(invoice).toHaveProperty('order_id');
-        expect(invoice).toHaveProperty('amount');
+        expect(invoice).toHaveProperty('amount_ht');
+        expect(invoice).toHaveProperty('tva_rate');
+        expect(invoice).toHaveProperty('tva_amount');
+        expect(invoice).toHaveProperty('amount_ttc');
         expect(invoice).toHaveProperty('issued_at');
         expect(invoice).toHaveProperty('client_name');
       });
@@ -294,11 +357,12 @@ describe('Scénario complet : Créer commande et facturer', () => {
     const invoiceResponse = await request(app)
       .post('/invoices/1')
       .send({
-        amount: 450.75
+        amount_ht: 450.75
       });
 
     expect(invoiceResponse.status).toBe(201);
-    expect(invoiceResponse.body.amount).toBe(450.75);
+    expect(invoiceResponse.body.amount_ht).toBe(450.75);
+    expect(invoiceResponse.body.amount_ttc).toBe(540.9); // 450.75 + 20% TVA
 
     // 3. Vérifier que la facture est lisible
     const listResponse = await request(app).get('/invoices');

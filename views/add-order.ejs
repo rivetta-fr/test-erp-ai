@@ -9,8 +9,13 @@
 
 <form action="/orders" method="POST" class="form-container">
   <div class="form-group">
-    <label for="client_name">👤 Nom du Client:</label>
-    <input type="text" id="client_name" name="client_name" placeholder="Ex: Entreprise XYZ" required>
+    <label for="client_id">👥 Sélectionner un Client:</label>
+    <select id="client_id" name="client_id" required>
+      <option value="">-- Choisir un client --</option>
+      <% clients.forEach(client => { %>
+        <option value="<%= client.id %>"><%= client.name %></option>
+      <% }); %>
+    </select>
   </div>
 
   <div class="form-row">

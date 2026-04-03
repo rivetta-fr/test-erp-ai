@@ -57,8 +57,8 @@ beforeAll(() => {
 
   updateTruckStatus = (truckId, callback) => {
     db.get(
-      `SELECT departure_time, arrival_time FROM orders 
-       WHERE truck_id = ? AND status != 'pending' 
+      `SELECT departure_time, arrival_time, status FROM orders 
+       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit') 
        ORDER BY created_at DESC LIMIT 1`,
       [truckId],
       (err, row) => {
@@ -74,6 +74,18 @@ beforeAll(() => {
 
   return new Promise((resolve) => {
     db.serialize(() => {
+      // Table clients
+      db.run(`CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Table trucks
       db.run(`CREATE TABLE IF NOT EXISTS trucks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -81,9 +93,10 @@ beforeAll(() => {
         status TEXT DEFAULT 'available'
       )`);
 
+      // Table orders (avec client_id)
       db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_name TEXT NOT NULL,
+        client_id INTEGER,
         origin TEXT,
         destination TEXT,
         truck_id INTEGER,
@@ -91,19 +104,30 @@ beforeAll(() => {
         departure_time DATETIME,
         arrival_time DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES clients (id),
         FOREIGN KEY (truck_id) REFERENCES trucks (id)
       )`);
 
+      // Table invoices (avec nouveau schéma)
       db.run(`CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE,
         order_id INTEGER,
-        amount REAL,
+        amount_ht REAL,
+        tva_rate REAL DEFAULT 20.0,
+        tva_amount REAL,
+        amount_ttc REAL,
+        status TEXT DEFAULT 'pending',
         issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (order_id) REFERENCES orders (id)
       )`, () => {
-        // Créer un camion de test
-        db.run('INSERT INTO trucks (name, capacity) VALUES (?, ?)', ['Test Truck', 5000], () => {
-          resolve();
+        // Créer un client de test
+        db.run('INSERT INTO clients (name, contact_person, email) VALUES (?, ?, ?)', 
+          ['Client Test', 'Jean Dupont', 'jean@test.com'], () => {
+          // Créer un camion de test
+          db.run('INSERT INTO trucks (name, capacity) VALUES (?, ?)', ['Test Truck', 5000], () => {
+            resolve();
+          });
         });
       });
     });
@@ -113,7 +137,10 @@ beforeAll(() => {
 beforeAll(() => {
   // GET /orders - Liste toutes les commandes
   app.get('/orders', (req, res) => {
-    db.all(`SELECT orders.*, trucks.name as truck_name FROM orders LEFT JOIN trucks ON orders.truck_id = trucks.id`, [], (err, rows) => {
+    db.all(`SELECT orders.*, trucks.name as truck_name, clients.name as client_name 
+            FROM orders 
+            LEFT JOIN trucks ON orders.truck_id = trucks.id 
+            LEFT JOIN clients ON orders.client_id = clients.id`, [], (err, rows) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -129,10 +156,10 @@ beforeAll(() => {
 
   // POST /orders - Créer une commande
   app.post('/orders', (req, res) => {
-    const { client_name, origin, destination, truck_id, departure_time, arrival_time } = req.body;
+    const { client_id, origin, destination, truck_id, departure_time, arrival_time } = req.body;
 
     // Validation
-    if (!client_name || !origin || !destination || !truck_id || !departure_time || !arrival_time) {
+    if (!client_id || !origin || !destination || !truck_id || !departure_time || !arrival_time) {
       return res.status(400).json({ error: 'Tous les champs sont requis' });
     }
 
@@ -143,9 +170,11 @@ beforeAll(() => {
       return res.status(400).json({ error: 'L\'arrivée doit être après le départ' });
     }
 
+    const status = calculateStatus(departure_time, arrival_time);
+
     db.run(
-      'INSERT INTO orders (client_name, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [client_name, origin, destination, truck_id, departure_time, arrival_time, 'pending'],
+      'INSERT INTO orders (client_id, origin, destination, truck_id, departure_time, arrival_time, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [client_id, origin, destination, truck_id, departure_time, arrival_time, status],
       function(err) {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -154,13 +183,13 @@ beforeAll(() => {
         updateTruckStatus(truck_id, () => {
           res.status(201).json({
             id: this.lastID,
-            client_name,
+            client_id,
             origin,
             destination,
             truck_id,
             departure_time,
             arrival_time,
-            status: 'pending'
+            status
           });
         });
       }
@@ -222,7 +251,7 @@ describe('TC-ORDER-001 : Créer une commande planifiée', () => {
     const response = await request(app)
       .post('/orders')
       .send({
-        client_name: 'Entreprise ABC',
+        client_id: 1,
         origin: 'Paris',
         destination: 'Lyon',
         truck_id: 1,
@@ -232,7 +261,7 @@ describe('TC-ORDER-001 : Créer une commande planifiée', () => {
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('id');
-    expect(response.body.client_name).toBe('Entreprise ABC');
+    expect(response.body.client_id).toBe(1);
     expect(response.body.origin).toBe('Paris');
     expect(response.body.destination).toBe('Lyon');
   });
@@ -244,7 +273,7 @@ describe('TC-ORDER-001 : Créer une commande planifiée', () => {
     const response = await request(app)
       .post('/orders')
       .send({
-        client_name: 'Test Client',
+        client_id: 1,
         origin: 'City A',
         destination: 'City B',
         truck_id: 1,
@@ -260,7 +289,7 @@ describe('TC-ORDER-001 : Créer une commande planifiée', () => {
     const response = await request(app)
       .post('/orders')
       .send({
-        client_name: 'Test',
+        client_id: 1,
         origin: 'A'
         // Manque destination, truck_id, etc.
       });
