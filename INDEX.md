@@ -5,6 +5,7 @@
 Projet ERP simplifié dédié au **transport et à la logistique** avec gestion des ressources (camions), des commandes et des factures.
 
 **Stack Technique**:
+
 - Backend : Node.js + Express.js
 - Database : SQLite3
 - Frontend : EJS + HTML5/CSS3
@@ -16,6 +17,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 ## 📚 Documentation Disponible
 
 ### 1. **SPECIFICATIONS.md** ⭐ PRINCIPAL
+
 - Spécifications techniques détaillées
 - Description des 3 modules (Trucks, Orders, Invoices)
 - Acceptance criteria intégrés
@@ -25,6 +27,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Comprendre le design et l'architecture
 
 ### 2. **TEST_PLAN.md** ⭐ STRATÉGIE
+
 - Plan de test complet avec 15+ scénarios
 - Approche de test par module
 - Critères de validation
@@ -34,6 +37,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Stratégie et planning de test
 
 ### 3. **ACCEPTANCE_CRITERIA.md** ⭐ VALIDATION
+
 - Critères d'acceptation généraux (19 critères)
 - Critères spécifiques par module (3+3+3)
 - Traçabilité fonctionnalité → test → critère
@@ -42,6 +46,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Validation et acceptance
 
 ### 4. **TESTS_README.md** ⭐ GUIDE PRATIQUE
+
 - Installation et setup
 - Comment exécuter les tests
 - Description de chaque test
@@ -52,6 +57,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Exécuter et maintenir les tests
 
 ### 5. **TEST_COVERAGE.md** 📊 RAPPORTS
+
 - Rapport détaillé de couverture
 - Couverture par module
 - Cas de test, validation, edges
@@ -61,6 +67,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Comprendre la couverture
 
 ### 6. **TEST_SUMMARY.md** 📋 RÉCAPITULATIF
+
 - Résumé de tout ce qui a été fait
 - Statut de chaque test
 - Acceptance criteria couverts
@@ -69,6 +76,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Vue d'ensemble complète
 
 ### 7. **README.md** 🏠 HOME
+
 - Vue d'ensemble du projet
 - Démarrage rapide
 - Structure des fichiers
@@ -78,6 +86,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 **À lire pour** : Démarrer le serveur
 
 ### 8. **FUNCTIONAL_SPEC.md** ✨ FONCTIONNEL
+
 - Spécifications fonctionnelles
 - Cas d'utilisation
 - Workflows utilisateur
@@ -108,12 +117,12 @@ package.json            - Dépendances + scripts test
 
 ### Statistiques
 
-| Métrique | Valeur |
-|----------|--------|
-| **Tests Total** | 30+ |
-| **Suites** | 12 |
-| **Modules Testés** | 3 |
-| **E2E Coverage** | 2 workflows |
+| Métrique                | Valeur       |
+| ----------------------- | ------------ |
+| **Tests Total**         | 30+          |
+| **Suites**              | 12           |
+| **Modules Testés**      | 3            |
+| **E2E Coverage**        | 2 workflows  |
 | **Acceptance Criteria** | 29/29 (100%) |
 
 ---
@@ -157,35 +166,35 @@ bash verify-tests.sh
 
 ### Module Camions (Trucks)
 
-| Test | Description | Status |
-|------|---|---|
-| TC-TRUCK-001 | Créer un camion | ✅ |
-| TC-TRUCK-002 | Validation capacité | ✅ |
-| TC-TRUCK-003 | Lister camions | ✅ |
+| Test         | Description         | Status |
+| ------------ | ------------------- | ------ |
+| TC-TRUCK-001 | Créer un camion     | ✅     |
+| TC-TRUCK-002 | Validation capacité | ✅     |
+| TC-TRUCK-003 | Lister camions      | ✅     |
 
 ### Module Commandes (Orders)
 
-| Test | Description | Status |
-|------|---|---|
-| TC-ORDER-001 | Créer commande | ✅ |
-| TC-ORDER-002 | Modifier horaires | ✅ |
-| TC-ORDER-003 | Statut in_transit | ✅ |
-| TC-ORDER-004 | Statut completed | ✅ |
+| Test         | Description       | Status |
+| ------------ | ----------------- | ------ |
+| TC-ORDER-001 | Créer commande    | ✅     |
+| TC-ORDER-002 | Modifier horaires | ✅     |
+| TC-ORDER-003 | Statut in_transit | ✅     |
+| TC-ORDER-004 | Statut completed  | ✅     |
 
 ### Module Facturation (Invoices)
 
-| Test | Description | Status |
-|------|---|---|
-| TC-INVOICE-001 | Créer facture | ✅ |
-| TC-INVOICE-002 | Lister factures | ✅ |
-| Integration | Workflow complet | ✅ |
+| Test           | Description      | Status |
+| -------------- | ---------------- | ------ |
+| TC-INVOICE-001 | Créer facture    | ✅     |
+| TC-INVOICE-002 | Lister factures  | ✅     |
+| Integration    | Workflow complet | ✅     |
 
 ### E2E Tests
 
-| Test | Description | Status |
-|------|---|---|
-| TC-REG-001 | Cycle complet | ✅ |
-| TC-REG-002 | Stabilité générale | ✅ |
+| Test       | Description        | Status |
+| ---------- | ------------------ | ------ |
+| TC-REG-001 | Cycle complet      | ✅     |
+| TC-REG-002 | Stabilité générale | ✅     |
 
 ---
 
@@ -273,14 +282,11 @@ AC-INVOICE-001,002,003 (Acceptation)
 ### CI/CD
 
 ```yaml
-install:
-  npm install
+install: npm install
 
-test:
-  npm test
+test: npm test
 
-coverage:
-  npm run test:coverage
+coverage: npm run test:coverage
 
 deploy:
   # Seulement si tous les tests passent
@@ -298,21 +304,27 @@ deploy:
 ## 📞 Q&A
 
 ### "Comment démarrer ?"
+
 → Voir **README.md** + exécuter `npm start`
 
 ### "Comment tester ?"
+
 → Voir **TESTS_README.md** + exécuter `npm test`
 
 ### "Qu'est-ce qui est testé ?"
+
 → Voir **TEST_COVERAGE.md**
 
 ### "Quels sont les critères d'acceptation ?"
+
 → Voir **ACCEPTANCE_CRITERIA.md**
 
 ### "Quelle est l'architecture ?"
+
 → Voir **SPECIFICATIONS.md**
 
 ### "Comment tester manuellement ?"
+
 → Voir **TEST_PLAN.md**
 
 ---

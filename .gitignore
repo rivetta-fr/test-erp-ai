@@ -1,0 +1,45 @@
+node_modules/
+*.db
+test*.db
+erp.db
+.env
+.env.local
+dist/
+build/
+
+# Test files
+test-results/
+playwright-report/
+.nyc_output/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+package-lock.json
+yarn.lock
+
+# npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Videos and screenshots from tests
+tests/e2e/test-results/
+tests/**/*.mp4
+tests/**/*.png
