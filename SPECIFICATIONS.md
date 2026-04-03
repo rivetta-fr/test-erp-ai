@@ -310,6 +310,7 @@ function calculateStatus(departureTime, arrivalTime) {
 **AC-ORDER-001 : Créer une commande**
 
 Critères d'acceptation :
+
 - ✓ Formulaire accessible via "Ajouter une commande"
 - ✓ Champs requis :
   - Nom du client (string)
@@ -327,6 +328,7 @@ Critères d'acceptation :
 **AC-ORDER-002 : Consulter les commandes**
 
 Critères d'acceptation :
+
 - ✓ Page `/orders` affiche un tableau ou des cartes
 - ✓ Pour chaque commande, afficher :
   - ID et Numéro de commande
@@ -347,6 +349,7 @@ Critères d'acceptation :
 **AC-ORDER-003 : Modifier les horaires**
 
 Critères d'acceptation :
+
 - ✓ Formulaire de modification accessible via "✏️ Modifier heures"
 - ✓ Champs pré-remplis avec les valeurs actuelles
 - ✓ Permettre modification de départ et arrivée
@@ -361,6 +364,7 @@ Critères d'acceptation :
 **AC-ORDER-004 : Calcul dynamique des statuts**
 
 Critères d'acceptation :
+
 - ✓ Statut "pending" : pas de dates définies
 - ✓ Statut "scheduled" : départ dans le futur (NOW < départ)
 - ✓ Statut "in_transit" : actuellement en route (NOW ∈ [départ, arrivée])
@@ -423,6 +427,7 @@ Invoice {
 **AC-INVOICE-001 : Créer une facture**
 
 Critères d'acceptation :
+
 - ✓ Formulaire facture accessible sur page commandes
 - ✓ Champ "Montant" (number, > 0)
 - ✓ Montant en euros avec 2 décimales
@@ -437,6 +442,7 @@ Critères d'acceptation :
 **AC-INVOICE-002 : Consulter les factures**
 
 Critères d'acceptation :
+
 - ✓ Page `/invoices` affiche un tableau
 - ✓ Colonnes : ID Facture, Client, Montant, Date d'émission
 - ✓ Tous les factures listées (si n > 20, pagination)
