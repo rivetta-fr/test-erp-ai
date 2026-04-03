@@ -18,11 +18,13 @@ db.serialize(() => {
 
     const hasDepartureTime = columns.some(col => col.name === 'departure_time');
     const hasArrivalTime = columns.some(col => col.name === 'arrival_time');
+    const cargoDescription = columns.some(col => col.name === 'cargo_description');
+    const weight = columns.some(col => col.name === 'weight');
 
     console.log('Colonnes actuelles:', columns.map(c => c.name));
 
-    if (hasDepartureTime && hasArrivalTime) {
-      console.log('✅ Colonnes departure_time et arrival_time déjà présentes.');
+    if (hasDepartureTime && hasArrivalTime && cargoDescription && weight) {
+      console.log('✅ Colonnes departure_time, arrival_time, cargo_description et weight déjà présentes.');
       db.close();
       return;
     }
@@ -48,6 +50,28 @@ db.serialize(() => {
           return;
         }
         console.log('✅ Colonne arrival_time ajoutée.');
+      });
+    }
+
+    // Ajouter cargo_description si elle n'existe pas
+    if (!cargoDescription) {
+      db.run("ALTER TABLE orders ADD COLUMN cargo_description TEXT", (err) => {
+        if (err) {
+          console.error('Erreur ajout cargo_description:', err);
+          return;
+        }
+        console.log('✅ Colonne cargo_description ajoutée.');
+      });
+    }
+
+    // Ajouter weight si elle n'existe pas
+    if (!weight) {
+      db.run("ALTER TABLE orders ADD COLUMN weight REAL", (err) => {
+        if (err) {
+          console.error('Erreur ajout weight:', err);
+          return;
+        }
+        console.log('✅ Colonne weight ajoutée.');
       });
     }
 
