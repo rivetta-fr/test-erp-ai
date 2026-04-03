@@ -6,12 +6,12 @@ Cette suite contient des **tests E2E (End-to-End)** pour tester l'interface util
 
 ### Différence vs Jest Tests
 
-| Jest (Actuels) | Playwright (Nouveaux) |
-|---|---|
-| ✅ Teste les API routes | ✅ Teste l'interface UI |
+| Jest (Actuels)              | Playwright (Nouveaux)           |
+| --------------------------- | ------------------------------- |
+| ✅ Teste les API routes     | ✅ Teste l'interface UI         |
 | ✅ Teste la logique backend | ✅ Simule les clics utilisateur |
-| ✅ Test BD transitions | ✅ Teste le rendu HTML/CSS |
-| ❌ Ne voit pas l'interface | ✅ Responsive testing |
+| ✅ Test BD transitions      | ✅ Teste le rendu HTML/CSS      |
+| ❌ Ne voit pas l'interface  | ✅ Responsive testing           |
 
 ---
 
@@ -45,6 +45,7 @@ npx playwright install
 ```
 
 Optionnel (si vous voulez juste Chromium) :
+
 ```bash
 npx playwright install chromium
 ```
@@ -60,6 +61,7 @@ npm run test:e2e
 ```
 
 **Output** :
+
 ```
 E2E-TRUCK : Gestion des Camions
   ✓ E2E-TRUCK-001 : Doit ajouter un camion via le formulaire (2.5s)
@@ -95,6 +97,7 @@ npm run test:e2e:ui
 ```
 
 Ouvre une interface graphique où vous pouvez :
+
 - 👉 Cliquer sur les tests
 - 📺 Voir ce qui se passe en temps réel
 - ⏸️ Mettre en pause et déboguer
@@ -107,6 +110,7 @@ npm run test:e2e:debug
 ```
 
 Ouvre le débogueur Playwright avec :
+
 - 🔍 Inspecteur d'éléments
 - 📝 Console JavaScript
 - ⏸️ Breakpoints
@@ -132,33 +136,35 @@ npx playwright test --watch
 
 ```typescript
 // Serveur web testé
-webServer: 'http://localhost:3001'
+webServer: "http://localhost:3001";
 
 // Timeout
-timeout: 30 * 1000
+timeout: 30 * 1000;
 
 // Navigateurs testés
 projects: [
-  { name: 'chromium' },
-  { name: 'firefox' },
-  { name: 'webkit' },
-  { name: 'Mobile Chrome' }
-]
+  { name: "chromium" },
+  { name: "firefox" },
+  { name: "webkit" },
+  { name: "Mobile Chrome" },
+];
 
 // Rapports
-reporter: 'html'
-screenshot: 'only-on-failure'
-video: 'retain-on-failure'
+reporter: "html";
+screenshot: "only-on-failure";
+video: "retain-on-failure";
 ```
 
 ### Voir le Rapport HTML
 
 Après la première exécution :
+
 ```bash
 npx playwright show-report
 ```
 
 Ouvre le rapport HTML avec :
+
 - ✅ Tests passés/échoués
 - 📸 Screenshots des erreurs
 - 🎬 Videos des tests
@@ -170,42 +176,42 @@ Ouvre le rapport HTML avec :
 
 ### E2E-TRUCK : Camions (4 tests)
 
-| Test | Scénario |
-|------|----------|
-| **001** | Ajouter un camion via formulaire |
-| **002** | Afficher la liste des camions |
+| Test    | Scénario                               |
+| ------- | -------------------------------------- |
+| **001** | Ajouter un camion via formulaire       |
+| **002** | Afficher la liste des camions          |
 | **003** | Rejeter capacité invalide (0, négatif) |
 | **004** | Vérifier statut "available" par défaut |
 
 ### E2E-ORDER : Commandes (5 tests)
 
-| Test | Scénario |
-|------|----------|
+| Test    | Scénario                                |
+| ------- | --------------------------------------- |
 | **001** | Créer une commande avec horaires futurs |
-| **002** | Afficher la liste des commandes |
-| **003** | Vérifier le statut dynamique |
-| **004** | Modifier les horaires |
-| **005** | Valider les champs obligatoires |
+| **002** | Afficher la liste des commandes         |
+| **003** | Vérifier le statut dynamique            |
+| **004** | Modifier les horaires                   |
+| **005** | Valider les champs obligatoires         |
 
 ### E2E-INVOICE : Factures (5 tests)
 
-| Test | Scénario |
-|------|----------|
-| **001** | Afficher la liste des factures |
-| **002** | Afficher les propriétés des factures |
-| **003** | Vérifier la structure du tableau |
-| **004** | Navigation entre sections |
+| Test    | Scénario                              |
+| ------- | ------------------------------------- |
+| **001** | Afficher la liste des factures        |
+| **002** | Afficher les propriétés des factures  |
+| **003** | Vérifier la structure du tableau      |
+| **004** | Navigation entre sections             |
 | **005** | Responsive design (desktop et mobile) |
 
 ### E2E-FULL : Workflows Complets (5 tests)
 
-| Test | Scénario |
-|------|----------|
+| Test    | Scénario                                 |
+| ------- | ---------------------------------------- |
 | **001** | Cycle complet : Truck → Order → Invoices |
-| **002** | Navigation entre toutes les sections |
-| **003** | Performance (< 5s par page) |
-| **004** | Pas d'erreur JavaScript |
-| **005** | Responsive sur tous les appareils |
+| **002** | Navigation entre toutes les sections     |
+| **003** | Performance (< 5s par page)              |
+| **004** | Pas d'erreur JavaScript                  |
+| **005** | Responsive sur tous les appareils        |
 
 ---
 
@@ -215,32 +221,32 @@ Ouvre le rapport HTML avec :
 
 ```javascript
 // ✅ BON - Utiliser le texte visible
-await page.locator('text=Ajouter Camion').click();
+await page.locator("text=Ajouter Camion").click();
 
 // ✅ BON - Utiliser les attributs
-await page.fill('input[name="name"]', 'Volvo');
+await page.fill('input[name="name"]', "Volvo");
 
 // ❌ MAUVAIS - CSS Selectors fragiles
-await page.locator('.btn-primary.mt-2.ml-4').click();
+await page.locator(".btn-primary.mt-2.ml-4").click();
 ```
 
 ### 2. Attendre le Chargement
 
 ```javascript
 // ✅ BON
-await page.goto('/trucks');
-await page.waitForLoadState('networkidle');
+await page.goto("/trucks");
+await page.waitForLoadState("networkidle");
 
 // ❌ MAUVAIS
-await page.goto('/trucks');
-await page.click('button'); // Peut éclater si pas chargé
+await page.goto("/trucks");
+await page.click("button"); // Peut éclater si pas chargé
 ```
 
 ### 3. Vérifications Explicites
 
 ```javascript
 // ✅ BON
-await expect(page.locator('text=Success')).toBeVisible({ timeout: 5000 });
+await expect(page.locator("text=Success")).toBeVisible({ timeout: 5000 });
 
 // ❌ MAUVAIS
 await page.waitForTimeout(2000); // Timing imprévisible
@@ -255,6 +261,7 @@ await page.waitForTimeout(2000); // Timing imprévisible
 **Symptôme** : `Timeout waiting for element.click()`
 
 **Solution** :
+
 ```bash
 # Augmenter le timeout
 npx playwright test --timeout 60000
@@ -270,6 +277,7 @@ export const test = base.extend({
 **Symptôme** : `locator.click() timeout`
 
 **Debug** :
+
 ```bash
 npm run test:e2e:debug
 
@@ -281,6 +289,7 @@ npm run test:e2e:debug
 **Symptôme** : `Connection refused 127.0.0.1:3001`
 
 **Solution** :
+
 ```bash
 # S'assurer que le serveur tourne
 npm start
@@ -349,22 +358,22 @@ npx playwright test --reporter=json > results.json
 
 ```javascript
 // Visibilité
-await expect(page.locator('h1')).toBeVisible();
+await expect(page.locator("h1")).toBeVisible();
 
 // Texte
-await expect(page.locator('button')).toContainText('Ajouter');
+await expect(page.locator("button")).toContainText("Ajouter");
 
 // URL
-expect(page.url()).toContain('/trucks');
+expect(page.url()).toContain("/trucks");
 
 // Count
-await expect(page.locator('table tr')).toHaveCount(5);
+await expect(page.locator("table tr")).toHaveCount(5);
 
 // Attributs
-await expect(page.locator('input')).toHaveAttribute('disabled');
+await expect(page.locator("input")).toHaveAttribute("disabled");
 
 // Value
-await expect(page.locator('input[name="name"]')).toHaveValue('Volvo');
+await expect(page.locator('input[name="name"]')).toHaveValue("Volvo");
 ```
 
 ---

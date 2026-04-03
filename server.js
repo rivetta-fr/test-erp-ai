@@ -17,12 +17,17 @@
  */
 
 const express = require('express');
+const expressLayouts = require('express-ejs-layouts');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
 const PORT = 3001;
+
+// Utiliser express-ejs-layouts pour la mise en page globale
+app.use(expressLayouts);
+app.set('layout', 'layout');
 
 // ========================================
 // CONFIGURATION DES MIDDLEWARES
@@ -203,7 +208,7 @@ function updateTruckStatus(truckId, callback) {
  * Affiche la page principale avec les liens de navigation
  */
 app.get('/', (req, res) => {
-  res.render('index');
+  res.render('index', { currentPage: 'home' });
 });
 
 // ========================================
@@ -219,7 +224,7 @@ app.get('/trucks', (req, res) => {
     if (err) {
       throw err;
     }
-    res.render('trucks', { trucks: rows });
+    res.render('trucks', { trucks: rows, currentPage: 'trucks' });
   });
 });
 
@@ -227,7 +232,7 @@ app.get('/trucks', (req, res) => {
  * GET /trucks/add - Affiche le formulaire d'ajout d'un camion
  */
 app.get('/trucks/add', (req, res) => {
-  res.render('add-truck');
+  res.render('add-truck', { currentPage: 'add-truck' });
 });
 
 /**
@@ -273,7 +278,7 @@ app.get('/orders', (req, res) => {
       return order;
     });
     
-    res.render('orders', { orders: ordersWithStatus });
+    res.render('orders', { orders: ordersWithStatus, currentPage: 'orders' });
   });
 });
 
@@ -283,7 +288,7 @@ app.get('/orders', (req, res) => {
  */
 app.get('/orders/add', (req, res) => {
   db.all('SELECT * FROM trucks', [], (err, trucks) => {
-    res.render('add-order', { trucks });
+    res.render('add-order', { trucks, currentPage: 'add-order' });
   });
 });
 
@@ -336,7 +341,7 @@ app.get('/invoices', (req, res) => {
     if (err) {
       throw err;
     }
-    res.render('invoices', { invoices: rows });
+    res.render('invoices', { invoices: rows, currentPage: 'invoices' });
   });
 });
 

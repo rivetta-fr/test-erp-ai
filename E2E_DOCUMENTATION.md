@@ -206,7 +206,7 @@ E2E-FULL-001 : Cycle Complet
 └─ Phase 6 : Retour Accueil
    ├─ Cliquer sur "Accueil"
    └─ Vérifier URL
-   
+
 Durée : ~5.2s
 
 E2E-FULL-002 : Navigation Complète
@@ -271,11 +271,13 @@ TOTAL       | 30+        | 17+       | 47+      |
 **Titre** : Ajouter un camion via le formulaire
 
 **Préconditions** :
+
 - Application démarrée sur http://localhost:3001
 - Page accessible
 - Navigateur supporté (Chrome, Firefox, Safari)
 
 **Étapes** :
+
 1. Naviguer vers http://localhost:3001
 2. Attendre le chargement complet (networkidle)
 3. Cliquer sur le bouton "Ajouter Camion"
@@ -285,6 +287,7 @@ TOTAL       | 30+        | 17+       | 47+      |
 7. Attendre le chargement (networkidle)
 
 **Vérifications** :
+
 - ✅ L'élément texte "Volvo FH16 E2E" est visible
 - ✅ La table contient "Volvo FH16 E2E"
 - ✅ La table contient "5500"
@@ -300,9 +303,11 @@ TOTAL       | 30+        | 17+       | 47+      |
 **Titre** : Cycle complet d'une livraison
 
 **Préconditions** :
+
 - Identiques à Case 1
 
 **Étapes** :
+
 1. [Ajouter camion avec nom unique : "Full Journey Truck {timestamp}"]
 2. [Ajouter commande pour ce camion]
 3. [Naviguer aux camions et vérifier statut]
@@ -311,6 +316,7 @@ TOTAL       | 30+        | 17+       | 47+      |
 6. [Cliquer sur "Accueil"]
 
 **Vérifications** :
+
 - ✅ Camion créé et visible
 - ✅ Commande créée et visible
 - ✅ Statut camion a changé (non disponible/available)
@@ -346,13 +352,13 @@ Failed:      E2E-TRUCK-003 (element not found)
 
 ## 📈 Métriques
 
-| Métrique | Valeur | Status |
-|----------|--------|--------|
-| Tests | 17 | ✅ |
-| Coverage Modules | 4/4 | ✅ |
-| Navigateurs | 3+ | ✅ |
-| Responsive | Yes | ✅ |
-| Performance | <5s | ✅ |
+| Métrique         | Valeur | Status |
+| ---------------- | ------ | ------ |
+| Tests            | 17     | ✅     |
+| Coverage Modules | 4/4    | ✅     |
+| Navigateurs      | 3+     | ✅     |
+| Responsive       | Yes    | ✅     |
+| Performance      | <5s    | ✅     |
 
 ---
 

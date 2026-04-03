@@ -15,7 +15,7 @@
 ```
 tests/e2e/
 ├── trucks.spec.ts            4 tests - Gestion des camions
-├── orders.spec.ts            5 tests - Gestion des commandes  
+├── orders.spec.ts            5 tests - Gestion des commandes
 ├── invoices.spec.ts          5 tests - Gestion des factures
 ├── full-journey.spec.ts      5 tests - Workflows complets
 ├── fixtures.ts               Configuration commune
@@ -225,15 +225,15 @@ Playwright Tests (Frontend)
 
 ## 📈 Métriques Finales
 
-| Métrique | Avant | Après |
-|----------|-------|-------|
-| **Tests Total** | 30+ | 47+ |
-| **Fichiers Test** | 4 | 8 |
-| **Couverture** | API seulement | API + UI |
-| **Documentation** | 6 fichiers | 9 fichiers |
-| **Navigateurs** | N/A | 4 |
-| **Commits** | X | X+2 |
-| **Status** | ✅ | ✅✅ |
+| Métrique          | Avant         | Après      |
+| ----------------- | ------------- | ---------- |
+| **Tests Total**   | 30+           | 47+        |
+| **Fichiers Test** | 4             | 8          |
+| **Couverture**    | API seulement | API + UI   |
+| **Documentation** | 6 fichiers    | 9 fichiers |
+| **Navigateurs**   | N/A           | 4          |
+| **Commits**       | X             | X+2        |
+| **Status**        | ✅            | ✅✅       |
 
 ---
 
@@ -266,13 +266,13 @@ npx playwright show-report
 
 ## 📚 Documentation Complète
 
-| Doc | Purpose |
-|-----|---------|
-| [RUN_TESTS.md](./RUN_TESTS.md) | **← START HERE** |
-| [TESTS_README.md](./TESTS_README.md) | Jest guide |
-| [tests/e2e/README.md](./tests/e2e/README.md) | Playwright guide |
-| [E2E_DOCUMENTATION.md](./E2E_DOCUMENTATION.md) | Cas de test détaillés |
-| [INDEX.md](./INDEX.md) | Index complet du projet |
+| Doc                                            | Purpose                 |
+| ---------------------------------------------- | ----------------------- |
+| [RUN_TESTS.md](./RUN_TESTS.md)                 | **← START HERE**        |
+| [TESTS_README.md](./TESTS_README.md)           | Jest guide              |
+| [tests/e2e/README.md](./tests/e2e/README.md)   | Playwright guide        |
+| [E2E_DOCUMENTATION.md](./E2E_DOCUMENTATION.md) | Cas de test détaillés   |
+| [INDEX.md](./INDEX.md)                         | Index complet du projet |
 
 ---
 
@@ -324,6 +324,7 @@ npx playwright show-report
 ```
 
 **Commande magique** :
+
 ```bash
 npm run test:all
 ```

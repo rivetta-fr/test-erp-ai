@@ -4,11 +4,11 @@
 
 Votre suite de tests est maintenant composée de :
 
-| Type | Framework | Tests | Localisation |
-|------|-----------|-------|--------------|
-| Unitaires + API | Jest | 30+ | `tests/*.test.js` |
-| Interface UI | Playwright | 17+ | `tests/e2e/*.spec.ts` |
-| **Total** | - | **47+** | - |
+| Type            | Framework  | Tests   | Localisation          |
+| --------------- | ---------- | ------- | --------------------- |
+| Unitaires + API | Jest       | 30+     | `tests/*.test.js`     |
+| Interface UI    | Playwright | 17+     | `tests/e2e/*.spec.ts` |
+| **Total**       | -          | **47+** | -                     |
 
 ---
 
@@ -21,6 +21,7 @@ npm install
 ```
 
 Cela installe :
+
 - ✅ Jest et supertest (déjà fait)
 - ✅ Playwright (NOUVEAU)
 - ✅ Nodemon et autres dépendances
@@ -81,6 +82,7 @@ npm test -- --verbose
 ```
 
 **Résultat** :
+
 ```
 PASS  tests/trucks.test.js
 PASS  tests/orders.test.js
@@ -119,6 +121,7 @@ npx playwright test --reporter=json
 ```
 
 **Résultat** :
+
 ```
 ✓ E2E-TRUCK-001 : Ajouter un camion (2.5s)
 ✓ E2E-TRUCK-002 : Lister camions (1.2s)
@@ -150,17 +153,17 @@ npm run test:all
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    
+
     // Tests Jest (Backend)
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    
+
     // Tests Playwright (Frontend)
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    
+
     // Tous les tests
     "test:all": "npm test && npm run test:e2e"
   }
@@ -225,6 +228,7 @@ npx playwright show-report
 ```
 
 Voir :
+
 - 📸 Screenshots des erreurs
 - 🎬 Videos des tests
 - 📊 Statistiques
@@ -283,6 +287,7 @@ Error: Timeout waiting for element
 ```
 
 **Solution** :
+
 ```bash
 # Augmenter le timeout
 npx playwright test --timeout 60000
@@ -295,6 +300,7 @@ Connection refused 127.0.0.1:3001
 ```
 
 **Solution** :
+
 ```bash
 # Terminal 1
 npm start
@@ -318,6 +324,7 @@ Error: database is locked
 ```
 
 **Solution** :
+
 ```bash
 # Attendre que tous les tests se terminent
 rm -f *.db
@@ -330,31 +337,34 @@ npm test
 
 ## 📚 Documentation
 
-| Document | Contenu |
-|----------|---------|
-| [SPECIFICATIONS.md](./SPECIFICATIONS.md) | Architecture et design |
-| [TEST_PLAN.md](./TEST_PLAN.md) | Stratégie de test |
-| [TESTS_README.md](./TESTS_README.md) | Guide tests Jest |
-| [tests/e2e/README.md](./tests/e2e/README.md) | Guide tests Playwright |
+| Document                                       | Contenu                     |
+| ---------------------------------------------- | --------------------------- |
+| [SPECIFICATIONS.md](./SPECIFICATIONS.md)       | Architecture et design      |
+| [TEST_PLAN.md](./TEST_PLAN.md)                 | Stratégie de test           |
+| [TESTS_README.md](./TESTS_README.md)           | Guide tests Jest            |
+| [tests/e2e/README.md](./tests/e2e/README.md)   | Guide tests Playwright      |
 | [E2E_DOCUMENTATION.md](./E2E_DOCUMENTATION.md) | Documentation E2E détaillée |
-| [TEST_COVERAGE.md](./TEST_COVERAGE.md) | Coverage metrics |
-| [INDEX.md](./INDEX.md) | Index complet |
+| [TEST_COVERAGE.md](./TEST_COVERAGE.md)         | Coverage metrics            |
+| [INDEX.md](./INDEX.md)                         | Index complet               |
 
 ---
 
 ## 🎯 Prochaines Étapes
 
 ### Court Terme
+
 - ✅ Exécuter `npm run test:all`
 - ✅ Voir les rapports
 - ✅ Déboguer les erreurs
 
 ### Moyen Terme
+
 - 📋 Ajouter au CI/CD (GitHub Actions, Jenkins)
 - 📋 Augmenter coverage Playwright
 - 📋 Ajouter tests de performance
 
 ### Long Terme
+
 - 📋 Visual regression testing
 - 📋 Load testing
 - 📋 Accessibility testing (axe)
@@ -364,11 +374,13 @@ npm test
 ## 🎓 Apprentissage
 
 ### Jest (Tests API)
+
 - [Jest Documentation](https://jestjs.io)
 - [Supertest Guide](https://github.com/visionmedia/supertest)
 - Voir : `TESTS_README.md`
 
 ### Playwright (Tests UI)
+
 - [Playwright Documentation](https://playwright.dev)
 - [Locators Guide](https://playwright.dev/docs/locators)
 - Voir : `tests/e2e/README.md`

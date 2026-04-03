@@ -1,41 +1,176 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ajouter une Commande</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <div class="container">
-    <h1>➕ Ajouter une Commande</h1>
-    <form action="/orders" method="POST">
-      <label for="client_name">Nom du Client:</label>
-      <input type="text" id="client_name" name="client_name" placeholder="Ex: Entreprise XYZ" required>
-      
-      <label for="origin">Origine:</label>
-      <input type="text" id="origin" name="origin" placeholder="Ex: Paris" required>
-      
-      <label for="destination">Destination:</label>
-      <input type="text" id="destination" name="destination" placeholder="Ex: Lyon" required>
-      
-      <label for="truck_id">Sélectionner un Camion:</label>
-      <select id="truck_id" name="truck_id" required>
-        <option value="">-- Choisir un camion --</option>
-        <% trucks.forEach(truck => { %>
-          <option value="<%= truck.id %>"><%= truck.name %> (Capacité: <%= truck.capacity %>kg) - Status: <%= truck.status %></option>
-        <% }); %>
-      </select>
-      
-      <label for="departure_time">Date/Heure de Départ:</label>
-      <input type="datetime-local" id="departure_time" name="departure_time" required>
-      
-      <label for="arrival_time">Date/Heure d'Arrivée:</label>
-      <input type="datetime-local" id="arrival_time" name="arrival_time" required>
-      
-      <button type="submit">Créer Commande</button>
-    </form>
-    <a href="/orders">← Retour</a>
+<div class="content-header">
+  <h1>➕ Nouvelle Commande</h1>
+  <div class="subtitle">Créer une nouvelle commande de transport</div>
+</div>
+
+<div class="content-nav">
+  <a href="/orders">← Retour aux Commandes</a>
+</div>
+
+<form action="/orders" method="POST" class="form-container">
+  <div class="form-group">
+    <label for="client_name">👤 Nom du Client:</label>
+    <input type="text" id="client_name" name="client_name" placeholder="Ex: Entreprise XYZ" required>
   </div>
-</body>
-</html>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="origin">📍 Origine:</label>
+      <input type="text" id="origin" name="origin" placeholder="Ex: Paris" required>
+    </div>
+
+    <div class="form-group">
+      <label for="destination">🎯 Destination:</label>
+      <input type="text" id="destination" name="destination" placeholder="Ex: Lyon" required>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="truck_id">🚛 Sélectionner un Camion:</label>
+    <select id="truck_id" name="truck_id" required>
+      <option value="">-- Choisir un camion --</option>
+      <% trucks.forEach(truck => { %>
+        <option value="<%= truck.id %>">
+          <%= truck.name %> (Capacité: <%= truck.capacity %>kg) -
+          <span class="status-badge status-<%= truck.status %>">
+            <% if (truck.status === 'available') { %>Disponible
+            <% } else if (truck.status === 'scheduled') { %>Planifié
+            <% } else if (truck.status === 'in_transit') { %>En transit
+            <% } else if (truck.status === 'completed') { %>Terminé
+            <% } %>
+          </span>
+        </option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="departure_time">🕐 Date/Heure de Départ:</label>
+      <input type="datetime-local" id="departure_time" name="departure_time" required>
+    </div>
+
+    <div class="form-group">
+      <label for="arrival_time">🕐 Date/Heure d'Arrivée:</label>
+      <input type="datetime-local" id="arrival_time" name="arrival_time" required>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn-primary">💾 Créer la Commande</button>
+    <a href="/orders" class="btn-secondary">Annuler</a>
+  </div>
+</form>
+
+<style>
+  .form-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 700px;
+    margin: 20px auto;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 20px;
+  }
+
+  .form-row .form-group {
+    flex: 1;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+  }
+
+  .form-group select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .btn-primary {
+    background-color: #1976d2;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    flex: 1;
+  }
+
+  .btn-primary:hover {
+    background-color: #1565c0;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background-color: #f5f5f5;
+    color: #666;
+    padding: 12px 24px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    flex: 1;
+  }
+
+  .btn-secondary:hover {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.8rem;
+  }
+
+  .status-available { background-color: #e8f5e9; color: #2e7d32; }
+  .status-scheduled { background-color: #e1f5fe; color: #0277bd; }
+  .status-in_transit { background-color: #fff3e0; color: #e65100; }
+  .status-completed { background-color: #e8f5e9; color: #2e7d32; }
+</style>
