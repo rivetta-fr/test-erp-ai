@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter une Commande</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>➕ Ajouter une Commande</h1>
+    <form action="/orders" method="POST">
+      <label for="client_name">Nom du Client:</label>
+      <input type="text" id="client_name" name="client_name" placeholder="Ex: Entreprise XYZ" required>
+      
+      <label for="origin">Origine:</label>
+      <input type="text" id="origin" name="origin" placeholder="Ex: Paris" required>
+      
+      <label for="destination">Destination:</label>
+      <input type="text" id="destination" name="destination" placeholder="Ex: Lyon" required>
+      
+      <label for="truck_id">Sélectionner un Camion:</label>
+      <select id="truck_id" name="truck_id" required>
+        <option value="">-- Choisir un camion --</option>
+        <% trucks.forEach(truck => { %>
+          <option value="<%= truck.id %>"><%= truck.name %> (Capacité: <%= truck.capacity %>kg) - Status: <%= truck.status %></option>
+        <% }); %>
+      </select>
+      
+      <label for="departure_time">Date/Heure de Départ:</label>
+      <input type="datetime-local" id="departure_time" name="departure_time" required>
+      
+      <label for="arrival_time">Date/Heure d'Arrivée:</label>
+      <input type="datetime-local" id="arrival_time" name="arrival_time" required>
+      
+      <button type="submit">Créer Commande</button>
+    </form>
+    <a href="/orders">← Retour</a>
+  </div>
+</body>
+</html>

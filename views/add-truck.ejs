@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter un Camion</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>➕ Ajouter un Camion</h1>
+    <form action="/trucks" method="POST">
+      <label for="name">Nom du Camion:</label>
+      <input type="text" id="name" name="name" placeholder="Ex: Volvo FH16" required>
+      <label for="capacity">Capacité (kg):</label>
+      <input type="number" id="capacity" name="capacity" placeholder="Ex: 5000" required>
+      <button type="submit">Ajouter Camion</button>
+    </form>
+    <a href="/trucks">← Retour</a>
+  </div>
+</body>
+</html>

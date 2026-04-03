@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Commandes</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .order-details {
+      background-color: #f9f9f9;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #1976d2;
+    }
+    .time-form {
+      background-color: white;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    .time-form.show {
+      display: block;
+    }
+    .time-form input {
+      margin-bottom: 10px;
+    }
+    .btn-update {
+      background-color: #66bb6a;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-right: 5px;
+    }
+    .btn-update:hover {
+      background-color: #4caf50;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    .status-pending { background-color: #fff9c4; color: #f57f17; }
+    .status-scheduled { background-color: #e1f5fe; color: #0277bd; }
+    .status-in_transit { background-color: #fff3e0; color: #e65100; }
+    .status-completed { background-color: #e8f5e9; color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 Gestion des Commandes</h1>
+    <nav>
+      <a href="/orders/add">➕ Ajouter une Commande</a>
+      <a href="/">Retour</a>
+    </nav>
+    
+    <% orders.forEach(order => { %>
+      <div class="order-details">
+        <h3>Commande #<%= order.id %> - <%= order.client_name %></h3>
+        <p><strong>Trajet:</strong> <%= order.origin %> → <%= order.destination %></p>
+        <p><strong>Camion:</strong> <%= order.truck_name || 'Non assigné' %></p>
+        <p>
+          <strong>Statut:</strong> 
+          <span class="status-badge status-<%= order.dynamic_status %>">
+            <% if (order.dynamic_status === 'pending') { %>⏳ En attente
+            <% } else if (order.dynamic_status === 'scheduled') { %>📅 Planifié
+            <% } else if (order.dynamic_status === 'in_transit') { %>🚚 En transit
+            <% } else if (order.dynamic_status === 'completed') { %>✓ Complété
+            <% } %>
+          </span>
+        </p>
+        
+        <% if (order.departure_time) { %>
+          <p><strong>Départ:</strong> <%= new Date(order.departure_time).toLocaleString('fr-FR') %></p>
+        <% } %>
+        <% if (order.arrival_time) { %>
+          <p><strong>Arrivée:</strong> <%= new Date(order.arrival_time).toLocaleString('fr-FR') %></p>
+        <% } %>
+        
+        <button class="btn-update" onclick="toggleTimeForm(<%= order.id %>)">✏️ Modifier heures</button>
+        
+        <form id="time-form-<%= order.id %>" class="time-form" action="/orders/<%= order.id %>/update-times" method="POST">
+          <label for="departure-<%= order.id %>">Départ (date/heure):</label>
+          <input type="datetime-local" id="departure-<%= order.id %>" name="departure_time" value="<%= order.departure_time ? order.departure_time.replace(' ', 'T') : '' %>" required>
+          
+          <label for="arrival-<%= order.id %>">Arrivée (date/heure):</label>
+          <input type="datetime-local" id="arrival-<%= order.id %>" name="arrival_time" value="<%= order.arrival_time ? order.arrival_time.replace(' ', 'T') : '' %>" required>
+          
+          <button type="submit" class="btn-update">💾 Enregistrer</button>
+          <button type="button" class="btn-update" onclick="toggleTimeForm(<%= order.id %>)" style="background-color: #999;">Annuler</button>
+        </form>
+        
+        <% if (order.dynamic_status === 'pending' && !order.departure_time) { %>
+          <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
+            <input type="number" name="amount" placeholder="Montant" step="0.01" required style="width: 120px; padding: 8px;">
+            <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer</button>
+          </form>
+        <% } else if (order.dynamic_status === 'completed' && order.status !== 'completed') { %>
+          <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
+            <input type="number" name="amount" placeholder="Montant" step="0.01" required style="width: 120px; padding: 8px;">
+            <button type="submit" class="btn-update" style="background-color: #1976d2;">💰 Facturer</button>
+          </form>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+
+  <script>
+    function toggleTimeForm(orderId) {
+      const form = document.getElementById(`time-form-${orderId}`);
+      form.classList.toggle('show');
+    }
+  </script>
+</body>
+</html>

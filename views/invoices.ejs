@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facturation</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>💰 Facturation</h1>
+    <nav>
+      <a href="/">Retour</a>
+    </nav>
+    <table>
+      <thead>
+        <tr>
+          <th>ID Facture</th>
+          <th>Client</th>
+          <th>Montant</th>
+          <th>Date d'émission</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (invoices && invoices.length > 0) { %>
+          <% invoices.forEach(invoice => { %>
+            <tr>
+              <td>#<%= invoice.id %></td>
+              <td><%= invoice.client_name %></td>
+              <td style="font-weight: bold; color: #66bb6a;"><%= invoice.amount %> €</td>
+              <td><%= new Date(invoice.issued_at).toLocaleDateString('fr-FR') %></td>
+            </tr>
+          <% }); %>
+        <% } else { %>
+          <tr>
+            <td colspan="4" style="text-align: center; color: #999; padding: 30px;">Aucune facture émise</td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

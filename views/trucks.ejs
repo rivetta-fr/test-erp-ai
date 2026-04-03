@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Camions</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    .status-available { background-color: #e8f5e9; color: #2e7d32; }
+    .status-in_transit { background-color: #fff3e0; color: #e65100; }
+    .status-completed { background-color: #e1f5fe; color: #0277bd; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚛 Gestion des Camions</h1>
+    <nav>
+      <a href="/trucks/add">➕ Ajouter un Camion</a>
+      <a href="/">Retour</a>
+    </nav>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nom</th>
+          <th>Capacité</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% trucks.forEach(truck => { %>
+          <tr>
+            <td><%= truck.id %></td>
+            <td><%= truck.name %></td>
+            <td><%= truck.capacity %> kg</td>
+            <td>
+              <span class="status-badge status-<%= truck.status %>">
+                <% if (truck.status === 'available') { %>
+                  ✓ Disponible
+                <% } else if (truck.status === 'in_transit') { %>
+                  🚚 En transit
+                <% } else if (truck.status === 'scheduled') { %>
+                  📅 Planifié
+                <% } else if (truck.status === 'completed') { %>
+                  ✓ Complété
+                <% } else { %>
+                  <%= truck.status %>
+                <% } %>
+              </span>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
