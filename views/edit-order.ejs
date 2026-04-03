@@ -1,20 +1,21 @@
 <div class="content-header">
-  <h1>➕ Nouvelle Commande</h1>
-  <div class="subtitle">Créer une nouvelle commande de transport</div>
+  <h1>✏️ Modifier Commande</h1>
+  <div class="subtitle">Modifier les informations de la commande</div>
 </div>
 
 <div class="content-nav">
-  <a href="/orders">← Retour aux Commandes</a>
+  <a href="/orders">← Retour aux Commandes</a> |
+  <a href="/orders/<%= order.id %>">Voir la Commande</a>
 </div>
 
-<form action="/orders" method="POST" class="form-container" id="orderForm" novalidate>
+<form action="/orders/<%= order.id %>?_method=PUT" method="POST" class="form-container" id="orderForm" novalidate>
   <div class="form-group">
-    <label for="client_id">👥 Sélectionner un Client:</label>
+    <label for="client_id">👥 Client:</label>
     <select id="client_id" name="client_id" required
             aria-describedby="client-error" aria-required="true">
       <option value="">-- Choisir un client --</option>
       <% clients.forEach(client => { %>
-        <option value="<%= client.id %>"><%= client.name %></option>
+        <option value="<%= client.id %>" <%= order.client_id == client.id ? 'selected' : '' %>><%= client.name %></option>
       <% }); %>
     </select>
     <div id="client-error" class="error-message" role="alert" aria-live="polite"></div>
@@ -24,6 +25,7 @@
     <div class="form-group">
       <label for="origin">📍 Origine:</label>
       <input type="text" id="origin" name="origin" placeholder="Ex: Paris" required
+             value="<%= order.origin %>"
              aria-describedby="origin-error" aria-required="true" maxlength="100">
       <div id="origin-error" class="error-message" role="alert" aria-live="polite"></div>
     </div>
@@ -31,18 +33,19 @@
     <div class="form-group">
       <label for="destination">🎯 Destination:</label>
       <input type="text" id="destination" name="destination" placeholder="Ex: Lyon" required
+             value="<%= order.destination %>"
              aria-describedby="destination-error" aria-required="true" maxlength="100">
       <div id="destination-error" class="error-message" role="alert" aria-live="polite"></div>
     </div>
   </div>
 
   <div class="form-group">
-    <label for="truck_id">🚛 Sélectionner un Camion:</label>
+    <label for="truck_id">🚛 Camion:</label>
     <select id="truck_id" name="truck_id" required
             aria-describedby="truck-error" aria-required="true">
       <option value="">-- Choisir un camion --</option>
       <% trucks.forEach(truck => { %>
-        <option value="<%= truck.id %>">
+        <option value="<%= truck.id %>" <%= order.truck_id == truck.id ? 'selected' : '' %>>
           <%= truck.name %> (Capacité: <%= truck.capacity %>kg) -
           <span class="status-badge status-<%= truck.status %>">
             <% if (truck.status === 'available') { %>Disponible
@@ -61,6 +64,7 @@
     <div class="form-group">
       <label for="departure_time">🕐 Date/Heure de Départ:</label>
       <input type="datetime-local" id="departure_time" name="departure_time" required
+             value="<%= order.departure_time ? new Date(order.departure_time).toISOString().slice(0, 16) : '' %>"
              aria-describedby="departure-error" aria-required="true">
       <div id="departure-error" class="error-message" role="alert" aria-live="polite"></div>
     </div>
@@ -68,17 +72,36 @@
     <div class="form-group">
       <label for="arrival_time">🕐 Date/Heure d'Arrivée:</label>
       <input type="datetime-local" id="arrival_time" name="arrival_time" required
+             value="<%= order.arrival_time ? new Date(order.arrival_time).toISOString().slice(0, 16) : '' %>"
              aria-describedby="arrival-error" aria-required="true">
       <div id="arrival-error" class="error-message" role="alert" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="cargo_description">📦 Description de la Cargaison:</label>
+      <input type="text" id="cargo_description" name="cargo_description" placeholder="Ex: Électronique fragile"
+             value="<%= order.cargo_description || '' %>"
+             aria-describedby="cargo-error" maxlength="200">
+      <div id="cargo-error" class="error-message" role="alert" aria-live="polite"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="weight">⚖️ Poids (kg):</label>
+      <input type="number" id="weight" name="weight" placeholder="Ex: 1500" min="1" max="50000"
+             value="<%= order.weight || '' %>"
+             aria-describedby="weight-error">
+      <div id="weight-error" class="error-message" role="alert" aria-live="polite"></div>
     </div>
   </div>
 
   <div class="form-actions">
     <button type="submit" class="btn-primary" id="submitBtn">
       <span class="spinner-circular" id="submitSpinner" style="display: none; width: 16px; height: 16px; margin-right: 8px;"></span>
-      💾 Créer la Commande
+      💾 Mettre à Jour
     </button>
-    <a href="/orders" class="btn-secondary">Annuler</a>
+    <a href="/orders/<%= order.id %>" class="btn-secondary">Annuler</a>
   </div>
 </form>
 
@@ -266,6 +289,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     }
+    // Validation nombre positif
+    else if (field.type === 'number' && value) {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue <= 0) {
+        isValid = false;
+        errorMessage = 'Veuillez saisir un nombre positif.';
+      } else if (field.hasAttribute('max') && numValue > parseInt(field.getAttribute('max'))) {
+        isValid = false;
+        errorMessage = `Maximum ${field.getAttribute('max')} kg.`;
+      }
+    }
     // Validation longueur maximale
     else if (field.hasAttribute('maxlength') && value.length > parseInt(field.getAttribute('maxlength'))) {
       isValid = false;
@@ -287,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Validation en temps réel
-  const fields = ['client_id', 'origin', 'destination', 'truck_id', 'departure_time', 'arrival_time'];
+  const fields = ['client_id', 'origin', 'destination', 'truck_id', 'departure_time', 'arrival_time', 'cargo_description', 'weight'];
   fields.forEach(fieldId => {
     const field = document.getElementById(fieldId);
     if (field) {
@@ -305,6 +339,12 @@ document.addEventListener('DOMContentLoaded', function() {
           if (arrivalField.classList.contains('error')) {
             validateField(arrivalField);
           }
+        }
+      });
+
+      field.addEventListener('input', function() {
+        if (this.classList.contains('error')) {
+          validateField(this);
         }
       });
     }
@@ -335,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Afficher le spinner et désactiver le bouton
     submitSpinner.style.display = 'inline-block';
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-circular" style="width: 16px; height: 16px; margin-right: 8px;"></span>Création en cours...';
+    submitBtn.innerHTML = '<span class="spinner-circular" style="width: 16px; height: 16px; margin-right: 8px;"></span>Mise à jour en cours...';
 
     // Le formulaire sera soumis normalement
   });

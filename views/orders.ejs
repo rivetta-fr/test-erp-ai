@@ -7,12 +7,25 @@
   <a href="/orders/add">➕ Nouvelle Commande</a>
 </div>
 
+<!-- Onglets de filtrage -->
+<div class="tabs-container">
+  <button class="tab-btn active" data-tab="ongoing">🚚 Commandes en cours</button>
+  <button class="tab-btn" data-tab="completed">✓ Commandes complétées</button>
+</div>
+
 <% if (orders && orders.length > 0) { %>
-  <% orders.forEach(order => { %>
+  <!-- Spinner de chargement (exemple d'utilisation) -->
+  <div id="loading-spinner" class="spinner-circular" style="display: none;" aria-label="Chargement en cours"></div>
+
+  <!-- Onglet: Commandes en cours -->
+  <div id="ongoing" class="tab-content active">
+    <% const ongoingOrders = orders.filter(o => o.dynamic_status !== 'completed'); %>
+    <% if (ongoingOrders.length > 0) { %>
+      <% ongoingOrders.forEach(order => { %>
     <div class="order-card">
       <div class="order-header">
         <div class="order-title">
-          <h3>📦 Commande #<%= order.id %></h3>
+          <h3><a href="/orders/<%= order.id %>" style="color: #333; text-decoration: none;">📦 Commande #<%= order.id %></a></h3>
           <span class="client-name"><%= order.client_name %></span>
         </div>
         <div class="order-status">
@@ -51,7 +64,9 @@
         </div>
 
         <div class="order-actions">
-          <button class="btn-update toggle-time-btn" data-order-id="<%= order.id %>">✏️ Modifier heures</button>
+          <a href="/orders/<%= order.id %>/edit" class="btn-edit">✏️ Modifier</a>
+          <button class="btn-delete" onclick="deleteOrder(<%= order.id %>)">🗑️ Supprimer</button>
+          <button class="btn-update toggle-time-btn" data-order-id="<%= order.id %>">🕐 Modifier heures</button>
 
           <% if (order.dynamic_status === 'pending' && !order.departure_time) { %>
             <form action="/invoices/<%= order.id %>" method="POST" style="display:inline;">
@@ -84,7 +99,93 @@
         </form>
       </div>
     </div>
-  <% }); %>
+      <% }); %>
+    <% } else { %>
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <p>🚚 Aucune commande en cours</p>
+        <p><a href="/orders/add" style="color: #1976d2; text-decoration: none;">Créer votre première commande</a></p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Onglet: Commandes complétées -->
+  <div id="completed" class="tab-content">
+    <% const completedOrders = orders.filter(o => o.dynamic_status === 'completed'); %>
+    <% if (completedOrders.length > 0) { %>
+      <% completedOrders.forEach(order => { %>
+    <div class="order-card">
+      <div class="order-header">
+        <div class="order-title">
+          <h3><a href="/orders/<%= order.id %>" style="color: #333; text-decoration: none;">📦 Commande #<%= order.id %></a></h3>
+          <span class="client-name"><%= order.client_name %></span>
+        </div>
+        <div class="order-status">
+          <span class="status-badge status-<%= order.dynamic_status %>">
+            <% if (order.dynamic_status === 'pending') { %>⏳ En attente
+            <% } else if (order.dynamic_status === 'scheduled') { %>📅 Planifié
+            <% } else if (order.dynamic_status === 'in_transit') { %>🚚 En transit
+            <% } else if (order.dynamic_status === 'completed') { %>✓ Complété
+            <% } %>
+          </span>
+        </div>
+      </div>
+
+      <div class="order-content">
+        <div class="order-info-grid">
+          <div class="info-item">
+            <div class="info-label">🚛 Camion</div>
+            <div class="info-value"><%= order.truck_name || 'Non assigné' %></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">📍 Trajet</div>
+            <div class="info-value"><%= order.origin %> → <%= order.destination %></div>
+          </div>
+          <% if (order.departure_time) { %>
+            <div class="info-item">
+              <div class="info-label">🕐 Départ</div>
+              <div class="info-value"><%= new Date(order.departure_time).toLocaleString('fr-FR') %></div>
+            </div>
+          <% } %>
+          <% if (order.arrival_time) { %>
+            <div class="info-item">
+              <div class="info-label">🕐 Arrivée</div>
+              <div class="info-value"><%= new Date(order.arrival_time).toLocaleString('fr-FR') %></div>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="order-actions">
+          <a href="/orders/<%= order.id %>/edit" class="btn-edit">✏️ Modifier</a>
+          <button class="btn-delete" onclick="deleteOrder(<%= order.id %>)">🗑️ Supprimer</button>
+          <button class="btn-update toggle-time-btn" data-order-id="<%= order.id %>">🕐 Modifier heures</button>
+        </div>
+
+        <form id="time-form-<%= order.id %>" class="time-form" action="/orders/<%= order.id %>/update-times" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="departure-<%= order.id %>">Départ (date/heure):</label>
+              <input type="datetime-local" id="departure-<%= order.id %>" name="departure_time" value="<%= order.departure_time ? order.departure_time.replace(' ', 'T') : '' %>" required>
+            </div>
+            <div class="form-group">
+              <label for="arrival-<%= order.id %>">Arrivée (date/heure):</label>
+              <input type="datetime-local" id="arrival-<%= order.id %>" name="arrival_time" value="<%= order.arrival_time ? order.arrival_time.replace(' ', 'T') : '' %>" required>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-update">💾 Enregistrer</button>
+            <button type="button" class="btn-update toggle-time-btn" data-order-id="<%= order.id %>" style="background-color: #999;">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </div>
+      <% }); %>
+    <% } else { %>
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <p>✓ Aucune commande complétée</p>
+      </div>
+    <% } %>
+  </div>
+  </div>
 <% } else { %>
   <div style="text-align: center; padding: 40px; color: #666;">
     <p>📦 Aucune commande enregistrée</p>
@@ -93,6 +194,50 @@
 <% } %>
 
 <style>
+  /* Tabs Styles */
+  .tabs-container {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    margin-bottom: -2px;
+  }
+
+  .tab-btn:hover {
+    color: #1976d2;
+  }
+
+  .tab-btn.active {
+    color: #1976d2;
+    border-bottom-color: #1976d2;
+  }
+
+  .tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .order-card {
     background: white;
     border-radius: 16px;
@@ -174,6 +319,43 @@
     gap: 12px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+  }
+
+  .order-actions .btn-edit {
+    background-color: #ff9800;
+    color: white;
+    padding: 10px 16px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .order-actions .btn-edit:hover {
+    background-color: #f57c00;
+    transform: translateY(-1px);
+  }
+
+  .order-actions .btn-delete {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .order-actions .btn-delete:hover {
+    background-color: #d32f2f;
+    transform: translateY(-1px);
   }
 
   .time-form {
@@ -291,4 +473,60 @@
       toggleTimeForm(orderId);
     });
   });
+
+  // Gestion des onglets
+  document.querySelectorAll('.tab-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = button.getAttribute('data-tab');
+
+      // Désactiver tous les onglets et contenu
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      // Activer l'onglet sélectionné
+      button.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+    });
+  });
+
+  // Exemple d'utilisation des spinners lors de soumissions de formulaires
+  document.querySelectorAll('form[action*="/invoices/"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      // Afficher le spinner
+      const spinner = document.getElementById('loading-spinner');
+      if (spinner) {
+        spinner.style.display = 'block';
+        // Désactiver le bouton pour éviter les doubles soumissions
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = '⏳ Traitement...';
+        }
+      }
+    });
+  });
+
+  function deleteOrder(orderId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette commande ?\n\n⚠️ Cette action est irréversible.')) {
+      fetch(`/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert('Erreur: ' + data.error);
+        } else {
+          alert('Commande supprimée avec succès !');
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        console.error('Erreur:', error);
+        alert('Une erreur est survenue lors de la suppression.');
+      });
+    }
+  }
 </script>

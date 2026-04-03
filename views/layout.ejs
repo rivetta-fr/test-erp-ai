@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof title !== 'undefined' && title ? title : 'ERP Transport' %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
   <style>
     /* Sidebar Styles */
@@ -100,7 +101,7 @@
     .sidebar-toggle {
       position: fixed;
       top: 20px;
-      left: 20px;
+      right: 20px;
       z-index: 1001;
       background: #1976d2;
       color: white;
@@ -122,11 +123,11 @@
       background: #1565c0;
       transform: scale(1.05);
     }
-
+/*
     .sidebar-toggle.hidden {
-      left: -60px;
+       left: -60px; 
     }
-
+*/
     /* Mobile Responsive */
     @media (max-width: 768px) {
       .sidebar {

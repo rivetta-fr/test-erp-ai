@@ -1,33 +1,61 @@
 <div class="content-header">
-  <h1>➕ Ajouter un Camion</h1>
-  <div class="subtitle">Enregistrer un nouveau camion dans le système</div>
+  <h1>✏️ Modifier Client</h1>
+  <div class="subtitle">Modifier les informations du client</div>
 </div>
 
 <div class="content-nav">
-  <a href="/trucks">← Retour aux Camions</a>
+  <a href="/clients">← Retour aux Clients</a> |
+  <a href="/clients/<%= client.id %>">Voir le Client</a>
 </div>
 
-<form action="/trucks" method="POST" class="form-container" id="truckForm" novalidate>
+<form action="/clients/<%= client.id %>?_method=PUT" method="POST" class="form-container" id="clientForm" novalidate>
   <div class="form-group">
-    <label for="name">🚛 Nom du Camion:</label>
-    <input type="text" id="name" name="name" placeholder="Ex: Volvo FH16" required
+    <label for="name">🏢 Nom de l'entreprise:</label>
+    <input type="text" id="name" name="name" placeholder="Ex: Société ABC" required
+           value="<%= client.name %>"
            aria-describedby="name-error" aria-required="true" maxlength="100">
     <div id="name-error" class="error-message" role="alert" aria-live="polite"></div>
   </div>
 
   <div class="form-group">
-    <label for="capacity">📦 Capacité (kg):</label>
-    <input type="number" id="capacity" name="capacity" placeholder="Ex: 5000" required min="1" max="50000"
-           aria-describedby="capacity-error" aria-required="true">
-    <div id="capacity-error" class="error-message" role="alert" aria-live="polite"></div>
+    <label for="contact_person">👤 Personne de contact:</label>
+    <input type="text" id="contact_person" name="contact_person" placeholder="Ex: Jean Dupont"
+           value="<%= client.contact_person || '' %>"
+           aria-describedby="contact-error" maxlength="100">
+    <div id="contact-error" class="error-message" role="alert" aria-live="polite"></div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="email">📧 Email:</label>
+      <input type="email" id="email" name="email" placeholder="contact@societe-abc.com"
+             value="<%= client.email || '' %>"
+             aria-describedby="email-error" maxlength="254">
+      <div id="email-error" class="error-message" role="alert" aria-live="polite"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="phone">📞 Téléphone:</label>
+      <input type="tel" id="phone" name="phone" placeholder="01 23 45 67 89"
+             value="<%= client.phone || '' %>"
+             aria-describedby="phone-error" pattern="[0-9\s\-\+\(\)]*" maxlength="20">
+      <div id="phone-error" class="error-message" role="alert" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="address">📍 Adresse:</label>
+    <textarea id="address" name="address" rows="3" placeholder="Adresse complète de l'entreprise"
+              aria-describedby="address-error" maxlength="500"><%= client.address || '' %></textarea>
+    <div id="address-error" class="error-message" role="alert" aria-live="polite"></div>
   </div>
 
   <div class="form-actions">
     <button type="submit" class="btn-primary" id="submitBtn">
       <span class="spinner-circular" id="submitSpinner" style="display: none; width: 16px; height: 16px; margin-right: 8px;"></span>
-      💾 Ajouter le Camion
+      💾 Mettre à Jour
     </button>
-    <a href="/trucks" class="btn-secondary">Annuler</a>
+    <a href="/clients/<%= client.id %>" class="btn-secondary">Annuler</a>
   </div>
 </form>
 
@@ -37,8 +65,14 @@
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    max-width: 500px;
+    max-width: 600px;
     margin: 20px auto;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
   }
 
   .form-group {
@@ -53,19 +87,27 @@
     font-size: 1rem;
   }
 
-  .form-group input {
+  .form-group input,
+  .form-group textarea {
     width: 100%;
     padding: 12px;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     font-size: 1rem;
     transition: border-color 0.3s ease;
+    font-family: inherit;
   }
 
-  .form-group input:focus {
+  .form-group input:focus,
+  .form-group textarea:focus {
     outline: none;
     border-color: #1976d2;
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
   }
 
   .form-actions {
@@ -112,7 +154,8 @@
   }
 
   /* Styles pour la validation et accessibilité */
-  .form-group input.error {
+  .form-group input.error,
+  .form-group textarea.error {
     border-color: #d32f2f;
     box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
   }
@@ -135,11 +178,21 @@
     transform: none;
     box-shadow: none;
   }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+  }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('truckForm');
+  const form = document.getElementById('clientForm');
   const submitBtn = document.getElementById('submitBtn');
   const submitSpinner = document.getElementById('submitSpinner');
 
@@ -155,15 +208,20 @@ document.addEventListener('DOMContentLoaded', function() {
       isValid = false;
       errorMessage = 'Ce champ est obligatoire.';
     }
-    // Validation nombre positif
-    else if (field.type === 'number' && value) {
-      const numValue = parseFloat(value);
-      if (isNaN(numValue) || numValue <= 0) {
+    // Validation email
+    else if (field.type === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
         isValid = false;
-        errorMessage = 'Veuillez saisir un nombre positif.';
-      } else if (field.hasAttribute('max') && numValue > parseInt(field.getAttribute('max'))) {
+        errorMessage = 'Veuillez saisir une adresse email valide.';
+      }
+    }
+    // Validation téléphone
+    else if (field.type === 'tel' && value) {
+      const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
+      if (!phoneRegex.test(value)) {
         isValid = false;
-        errorMessage = `Maximum ${field.getAttribute('max')} kg.`;
+        errorMessage = 'Veuillez saisir un numéro de téléphone valide.';
       }
     }
     // Validation longueur maximale
@@ -187,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Validation en temps réel
-  const fields = ['name', 'capacity'];
+  const fields = ['name', 'contact_person', 'email', 'phone', 'address'];
   fields.forEach(fieldId => {
     const field = document.getElementById(fieldId);
     if (field) {
@@ -228,14 +286,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Afficher le spinner et désactiver le bouton
     submitSpinner.style.display = 'inline-block';
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-circular" style="width: 16px; height: 16px; margin-right: 8px;"></span>Ajout en cours...';
+    submitBtn.innerHTML = '<span class="spinner-circular" style="width: 16px; height: 16px; margin-right: 8px;"></span>Mise à jour en cours...';
 
     // Le formulaire sera soumis normalement
   });
 
   // Navigation au clavier améliorée
   form.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
       e.preventDefault();
       const formElements = Array.from(form.elements);
       const currentIndex = formElements.indexOf(e.target);

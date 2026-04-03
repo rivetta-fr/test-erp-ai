@@ -20,6 +20,7 @@ const express = require('express');
 const expressLayouts = require('express-ejs-layouts');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+const methodOverride = require('method-override');
 const path = require('path');
 
 const app = express();
@@ -38,6 +39,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Parser les données JSON
 app.use(bodyParser.json());
+
+// Support pour les méthodes PUT et DELETE dans les formulaires
+app.use(methodOverride('_method'));
 
 // Servir les fichiers statiques (CSS, images, JS)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -635,6 +639,323 @@ app.get('/clients/:id', (req, res) => {
         });
       }
     );
+  });
+});
+
+// ========================================
+// ROUTES CRUD COMPLET - CLIENTS
+// ========================================
+
+/** * GET /trucks/:id - Affiche les détails d'un camion
+ */
+app.get('/trucks/:id', (req, res) => {
+  const truckId = req.params.id;
+
+  db.get('SELECT * FROM trucks WHERE id = ?', [truckId], (err, truck) => {
+    if (err) {
+      throw err;
+    }
+    if (!truck) {
+      return res.status(404).send('Camion non trouvé');
+    }
+
+    // Récupérer les commandes associées à ce camion
+    db.all(`
+      SELECT o.*, c.name as client_name
+      FROM orders o
+      LEFT JOIN clients c ON o.client_id = c.id
+      WHERE o.truck_id = ?
+      ORDER BY o.created_at DESC
+    `, [truckId], (err, orders) => {
+      if (err) {
+        throw err;
+      }
+
+      res.render('truck-detail', {
+        truck,
+        orders: orders || [],
+        currentPage: 'trucks'
+      });
+    });
+  });
+});
+
+/** * GET /clients/:id/edit - Affiche le formulaire d'édition d'un client
+ */
+app.get('/clients/:id/edit', (req, res) => {
+  const clientId = req.params.id;
+  db.get('SELECT * FROM clients WHERE id = ?', [clientId], (err, client) => {
+    if (err) {
+      throw err;
+    }
+    if (!client) {
+      return res.status(404).send('Client non trouvé');
+    }
+    res.render('edit-client', { client, currentPage: 'clients' });
+  });
+});
+
+/**
+ * PUT /clients/:id - Met à jour un client existant
+ */
+app.put('/clients/:id', (req, res) => {
+  const clientId = req.params.id;
+  const { name, contact_person, email, phone, address } = req.body;
+
+  db.run(
+    'UPDATE clients SET name = ?, contact_person = ?, email = ?, phone = ?, address = ? WHERE id = ?',
+    [name, contact_person, email, phone, address, clientId],
+    function(err) {
+      if (err) {
+        return console.log('Erreur lors de la mise à jour du client:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).send('Client non trouvé');
+      }
+      res.redirect('/clients/' + clientId);
+    }
+  );
+});
+
+/**
+ * DELETE /clients/:id - Supprime un client
+ */
+app.delete('/clients/:id', (req, res) => {
+  const clientId = req.params.id;
+
+  // Vérifier si le client a des commandes actives
+  db.get('SELECT COUNT(*) as orderCount FROM orders WHERE client_id = ?', [clientId], (err, result) => {
+    if (err) {
+      throw err;
+    }
+
+    if (result.orderCount > 0) {
+      return res.status(400).json({
+        error: 'Impossible de supprimer ce client car il a des commandes associées.'
+      });
+    }
+
+    // Supprimer le client
+    db.run('DELETE FROM clients WHERE id = ?', [clientId], function(err) {
+      if (err) {
+        return console.log('Erreur lors de la suppression du client:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Client non trouvé' });
+      }
+      res.json({ success: true, message: 'Client supprimé avec succès' });
+    });
+// ========================================
+// ROUTES CRUD COMPLET - CAMIONS
+// ========================================
+
+/**
+ * GET /trucks/:id/edit - Affiche le formulaire d'édition d'un camion
+ */
+app.get('/trucks/:id/edit', (req, res) => {
+  const truckId = req.params.id;
+  db.get('SELECT * FROM trucks WHERE id = ?', [truckId], (err, truck) => {
+    if (err) {
+      throw err;
+    }
+    if (!truck) {
+      return res.status(404).send('Camion non trouvé');
+    }
+    res.render('edit-truck', { truck, currentPage: 'trucks' });
+  });
+});
+
+/**
+ * PUT /trucks/:id - Met à jour un camion existant
+ */
+app.put('/trucks/:id', (req, res) => {
+  const truckId = req.params.id;
+  const { name, license_plate, capacity, status } = req.body;
+
+  db.run(
+    'UPDATE trucks SET name = ?, license_plate = ?, capacity = ?, status = ? WHERE id = ?',
+    [name, license_plate, capacity, status, truckId],
+    function(err) {
+      if (err) {
+        return console.log('Erreur lors de la mise à jour du camion:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).send('Camion non trouvé');
+      }
+      res.redirect('/trucks/' + truckId);
+    }
+  );
+});
+
+/**
+ * DELETE /trucks/:id - Supprime un camion
+ */
+app.delete('/trucks/:id', (req, res) => {
+  const truckId = req.params.id;
+
+  // Vérifier si le camion a des commandes actives
+  db.get('SELECT COUNT(*) as orderCount FROM orders WHERE truck_id = ?', [truckId], (err, result) => {
+    if (err) {
+      throw err;
+    }
+
+    if (result.orderCount > 0) {
+      return res.status(400).json({
+        error: 'Impossible de supprimer ce camion car il a des commandes associées.'
+      });
+    }
+
+    // Supprimer le camion
+    db.run('DELETE FROM trucks WHERE id = ?', [truckId], function(err) {
+      if (err) {
+        return console.log('Erreur lors de la suppression du camion:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Camion non trouvé' });
+      }
+      res.json({ success: true, message: 'Camion supprimé avec succès' });
+    });
+  });
+});
+
+// ========================================
+// ROUTES CRUD COMPLET - COMMANDES
+// ========================================
+
+/**
+ * GET /orders/:id - Affiche les détails d'une commande
+ */
+app.get('/orders/:id', (req, res) => {
+  const orderId = req.params.id;
+
+  // Récupérer la commande avec les informations du client et camion
+  db.get(`
+    SELECT o.*, c.name as client_name, c.contact_person, c.email, c.phone,
+           t.name as truck_name, t.capacity, t.license_plate
+    FROM orders o
+    LEFT JOIN clients c ON o.client_id = c.id
+    LEFT JOIN trucks t ON o.truck_id = t.id
+    WHERE o.id = ?
+  `, [orderId], (err, order) => {
+    if (err) {
+      throw err;
+    }
+    if (!order) {
+      return res.status(404).send('Commande non trouvée');
+    }
+
+    res.render('order-detail', { order, currentPage: 'orders' });
+  });
+});
+
+/**
+ * GET /orders/:id/edit - Affiche le formulaire d'édition d'une commande
+ */
+app.get('/orders/:id/edit', (req, res) => {
+  const orderId = req.params.id;
+
+  // Récupérer la commande avec les informations du client et camion
+  db.get(`
+    SELECT o.*, c.name as client_name, t.name as truck_name
+    FROM orders o
+    LEFT JOIN clients c ON o.client_id = c.id
+    LEFT JOIN trucks t ON o.truck_id = t.id
+    WHERE o.id = ?
+  `, [orderId], (err, order) => {
+    if (err) {
+      throw err;
+    }
+    if (!order) {
+      return res.status(404).send('Commande non trouvée');
+    }
+
+    // Récupérer la liste des clients et camions pour les selects
+    db.all('SELECT id, name FROM clients ORDER BY name', [], (err, clients) => {
+      if (err) {
+        throw err;
+      }
+
+      db.all('SELECT id, name FROM trucks WHERE status = "available" ORDER BY name', [], (err, trucks) => {
+        if (err) {
+          throw err;
+        }
+
+        res.render('edit-order', {
+          order,
+          clients: clients || [],
+          trucks: trucks || [],
+          currentPage: 'orders'
+        });
+      });
+    });
+  });
+});
+
+/**
+ * PUT /orders/:id - Met à jour une commande existante
+ */
+app.put('/orders/:id', (req, res) => {
+  const orderId = req.params.id;
+  const { client_id, truck_id, origin, destination, departure_time, arrival_time, cargo_description, weight } = req.body;
+
+  db.run(
+    'UPDATE orders SET client_id = ?, truck_id = ?, origin = ?, destination = ?, departure_time = ?, arrival_time = ?, cargo_description = ?, weight = ? WHERE id = ?',
+    [client_id, truck_id, origin, destination, departure_time, arrival_time, cargo_description, weight, orderId],
+    function(err) {
+      if (err) {
+        return console.log('Erreur lors de la mise à jour de la commande:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).send('Commande non trouvée');
+      }
+
+      // Mettre à jour le statut du camion si nécessaire
+      updateTruckStatus(truck_id, (err) => {
+        if (err) {
+          console.log('Erreur lors de la mise à jour du statut du camion:', err.message);
+        }
+        res.redirect('/orders/' + orderId);
+      });
+    }
+  );
+});
+
+/**
+ * DELETE /orders/:id - Supprime une commande
+ */
+app.delete('/orders/:id', (req, res) => {
+  const orderId = req.params.id;
+
+  // Récupérer l'ID du camion avant suppression pour mettre à jour son statut
+  db.get('SELECT truck_id FROM orders WHERE id = ?', [orderId], (err, order) => {
+    if (err) {
+      throw err;
+    }
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande non trouvée' });
+    }
+
+    // Supprimer la commande
+    db.run('DELETE FROM orders WHERE id = ?', [orderId], function(err) {
+      if (err) {
+        return console.log('Erreur lors de la suppression de la commande:', err.message);
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Commande non trouvée' });
+      }
+
+      // Mettre à jour le statut du camion (le rendre disponible)
+      if (order.truck_id) {
+        db.run('UPDATE trucks SET status = "available" WHERE id = ?', [order.truck_id], (err) => {
+          if (err) {
+            console.log('Erreur lors de la mise à jour du statut du camion:', err.message);
+          }
+        });
+      }
+
+      res.json({ success: true, message: 'Commande supprimée avec succès' });
+    });
   });
 });
 

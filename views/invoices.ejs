@@ -8,47 +8,51 @@
 </div>
 
 <% if (invoices && invoices.length > 0) { %>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>N° Facture</th>
-        <th>Client</th>
-        <th>Montant HT</th>
-        <th>TVA (20%)</th>
-        <th>Montant TTC</th>
-        <th>Statut</th>
-        <th>Date d'émission</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% invoices.forEach(invoice => { %>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
         <tr>
-          <td><strong><%= invoice.invoice_number %></strong></td>
-          <td><%= invoice.client_name %></td>
-          <td><%= invoice.amount_ht %> €</td>
-          <td><%= invoice.tva_amount %> €</td>
-          <td><strong><%= invoice.amount_ttc %> €</strong></td>
-          <td>
-            <span class="status-badge status-<%= invoice.status %>">
-              <% if (invoice.status === 'pending') { %>⏳ En attente
-              <% } else if (invoice.status === 'paid') { %>💰 Payée
-              <% } else if (invoice.status === 'overdue') { %>⚠️ En retard
-              <% } %>
-            </span>
-          </td>
-          <td><%= new Date(invoice.issued_at).toLocaleDateString('fr-FR') %></td>
-          <td>
-            <% if (invoice.status === 'pending') { %>
-              <form action="/invoices/<%= invoice.id %>/pay" method="POST" style="display:inline;">
-                <button type="submit" class="btn-update" style="background-color: #4caf50;">💰 Marquer comme payée</button>
-              </form>
-            <% } %>
-          </td>
+          <th>N° Facture</th>
+          <th>Client</th>
+          <th>Montant HT</th>
+          <th>TVA (20%)</th>
+          <th>Montant TTC</th>
+          <th>Statut</th>
+          <th>Date d'émission</th>
+          <th>Actions</th>
         </tr>
-      <% }); %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% invoices.forEach(invoice => { %>
+          <tr>
+            <td><strong><%= invoice.invoice_number %></strong></td>
+            <td><%= invoice.client_name %></td>
+            <td><%= invoice.amount_ht %> €</td>
+            <td><%= invoice.tva_amount %> €</td>
+            <td><strong><%= invoice.amount_ttc %> €</strong></td>
+            <td>
+              <span class="status-badge status-<%= invoice.status %>">
+                <% if (invoice.status === 'pending') { %>⏳ En attente
+                <% } else if (invoice.status === 'paid') { %>💰 Payée
+                <% } else if (invoice.status === 'overdue') { %>⚠️ En retard
+                <% } %>
+              </span>
+            </td>
+            <td><%= new Date(invoice.issued_at).toLocaleDateString('fr-FR') %></td>
+            <td>
+              <% if (invoice.status === 'pending') { %>
+                <form action="/invoices/<%= invoice.id %>/pay" method="POST" class="inline-form">
+                  <button type="submit" class="btn-update">💰 Payer</button>
+                </form>
+              <% } else { %>
+                <span style="color: #666; font-size: 0.8rem;">✓ Traité</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
 <% } else { %>
   <div style="text-align: center; padding: 40px; color: #666;">
     <p>💰 Aucune facture enregistrée</p>
@@ -57,28 +61,38 @@
 <% } %>
 
 <style>
+  .table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
   .data-table {
     width: 100%;
+    min-width: 800px;
     border-collapse: collapse;
-    margin: 20px 0;
     background-color: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
 
   .data-table th {
     background-color: #f5f5f5;
-    padding: 15px;
+    padding: 12px 8px;
     text-align: left;
     font-weight: 600;
     color: #333;
     border-bottom: 2px solid #e0e0e0;
+    font-size: 0.9rem;
+    white-space: nowrap;
   }
 
   .data-table td {
-    padding: 15px;
+    padding: 12px 8px;
     border-bottom: 1px solid #e0e0e0;
+    font-size: 0.9rem;
   }
 
   .data-table tr:hover {
@@ -88,13 +102,18 @@
   .btn-update {
     background-color: #66bb6a;
     color: white;
-    padding: 8px 16px;
+    padding: 4px 8px;
     border: none;
-    border-radius: 6px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: 0.9rem;
-    margin-right: 8px;
-    transition: all 0.3s ease;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin: 0;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: auto;
+    height: 24px;
+    line-height: 1;
   }
 
   .btn-update:hover {
@@ -102,7 +121,35 @@
     transform: translateY(-1px);
   }
 
-  .status-pending { background-color: #fff9c4; color: #f57f17; }
-  .status-paid { background-color: #e8f5e9; color: #2e7d32; }
-  .status-overdue { background-color: #ffebee; color: #c62828; }
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .data-table th:last-child,
+  .data-table td:last-child {
+    width: 80px;
+    min-width: 80px;
+    max-width: 100px;
+    text-align: center;
+    padding: 8px 4px !important;
+  }
+
+  .inline-form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .table-container {
+      margin: 20px -10px;
+    }
+  }
 </style>

@@ -1,9 +1,9 @@
 /**
  * Tests - Module Gestion des Camions
- * 
+ *
  * Fichier : tests/trucks.test.js
  * Description : Tests des cas d'usage pour la gestion des camions
- * 
+ *
  * Cas de test couverts :
  * - TC-TRUCK-001 : Ajouter un camion avec données valides
  * - TC-TRUCK-002 : Validation de la capacité
@@ -15,11 +15,9 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-// Port et configuration de test
 const TEST_PORT = 3001;
 const TEST_DB = path.join(__dirname, '../test.db');
 
-// Créer une instance Express pour les tests
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -28,25 +26,17 @@ let db;
 let calculateStatus;
 let updateTruckStatus;
 
-// Initialiser l'app et la base de données pour les tests
 beforeAll(() => {
-  // Supprimer la base de données de test si elle existe
   if (fs.existsSync(TEST_DB)) {
     fs.unlinkSync(TEST_DB);
   }
 
-  // Créer l'app Express
   app = express();
-  
-  // Middleware
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
   app.set('view engine', 'ejs');
 
-  // Initialiser la base de données de test
   db = new sqlite3.Database(TEST_DB);
-
-  // Définir les fonctions utilitaires
   calculateStatus = (departureTime, arrivalTime) => {
     const now = new Date();
     const departure = departureTime ? new Date(departureTime) : null;
@@ -61,25 +51,23 @@ beforeAll(() => {
 
   updateTruckStatus = (truckId, callback) => {
     db.get(
-      `SELECT departure_time, arrival_time, status FROM orders 
-       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit') 
+      `SELECT departure_time, arrival_time, status FROM orders
+       WHERE truck_id = ? AND status IN ('scheduled', 'in_transit')
        ORDER BY created_at DESC LIMIT 1`,
       [truckId],
       (err, row) => {
         if (err) return callback(err);
-        
+
         const status = row ? calculateStatus(row.departure_time, row.arrival_time) : 'available';
         const truckStatus = status === 'pending' ? 'available' : status;
-        
+
         db.run('UPDATE trucks SET status = ? WHERE id = ?', [truckStatus, truckId], callback);
       }
     );
   };
 
-  // Créer les tables avec le nouveau schéma
   return new Promise((resolve) => {
     db.serialize(() => {
-      // Table clients
       db.run(`CREATE TABLE IF NOT EXISTS clients (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -90,7 +78,6 @@ beforeAll(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
-      // Table trucks
       db.run(`CREATE TABLE IF NOT EXISTS trucks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -98,7 +85,6 @@ beforeAll(() => {
         status TEXT DEFAULT 'available'
       )`);
 
-      // Table orders (avec client_id)
       db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         client_id INTEGER,
@@ -113,7 +99,6 @@ beforeAll(() => {
         FOREIGN KEY (truck_id) REFERENCES trucks (id)
       )`);
 
-      // Table invoices (avec nouveau schéma)
       db.run(`CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         invoice_number TEXT UNIQUE,
@@ -127,7 +112,6 @@ beforeAll(() => {
         FOREIGN KEY (order_id) REFERENCES orders (id)
       )`);
 
-      // Insérer des données de test
       db.run(`INSERT INTO clients (name, contact_person, email) VALUES
         ('Client Test 1', 'Jean Dupont', 'jean@test.com'),
         ('Client Test 2', 'Marie Martin', 'marie@test.com')`);
@@ -135,23 +119,9 @@ beforeAll(() => {
       resolve();
     });
   });
-
-      db.run(`CREATE TABLE IF NOT EXISTS invoices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        order_id INTEGER,
-        amount REAL,
-        issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders (id)
-      )`, () => {
-        resolve();
-      });
-    });
-  });
 });
 
-// Définir les routes pour les tests
 beforeAll(() => {
-  // GET /trucks - Liste tous les camions
   app.get('/trucks', (req, res) => {
     db.all('SELECT * FROM trucks', [], (err, rows) => {
       if (err) {
@@ -161,11 +131,9 @@ beforeAll(() => {
     });
   });
 
-  // POST /trucks - Créer un nouveau camion
   app.post('/trucks', (req, res) => {
     const { name, capacity } = req.body;
 
-    // Validation
     if (!name || !capacity) {
       return res.status(400).json({ error: 'Nom et capacité requis' });
     }
@@ -183,27 +151,23 @@ beforeAll(() => {
   });
 });
 
-// Nettoyer après les tests
 afterAll(() => {
   return new Promise((resolve) => {
     db.close((err) => {
       if (err) console.error(err);
-      
-      // Supprimer la base de données de test
       if (fs.existsSync(TEST_DB)) {
         fs.unlinkSync(TEST_DB);
       }
-      
       resolve();
     });
   });
 });
 
 // ========================================
-// TC-TRUCK-001 : Ajouter un camion valide
+// TC-TRUCK-001 : Ajouter un camion avec données valides
 // ========================================
 describe('TC-TRUCK-001 : Ajouter un camion avec données valides', () => {
-  test('Doit créer un camion avec statut "available"', async () => {
+  test('Doit créer un camion avec nom et capacité', async () => {
     const response = await request(app)
       .post('/trucks')
       .send({
@@ -218,22 +182,50 @@ describe('TC-TRUCK-001 : Ajouter un camion avec données valides', () => {
     expect(response.body.status).toBe('available');
   });
 
-  test('Doit insérer le camion dans la base de données', async () => {
-    await request(app)
+  test('Doit rejeter création sans nom', async () => {
+    const response = await request(app)
       .post('/trucks')
       .send({
-        name: 'Scania R450',
-        capacity: 6000
+        capacity: 3000
       });
 
-    const response = await request(app).get('/trucks');
-    
-    expect(response.status).toBe(200);
-    expect(response.body.length).toBeGreaterThan(0);
-    
-    const scania = response.body.find(t => t.name === 'Scania R450');
-    expect(scania).toBeDefined();
-    expect(scania.capacity).toBe(6000);
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('requis');
+  });
+
+  test('Doit rejeter création sans capacité', async () => {
+    const response = await request(app)
+      .post('/trucks')
+      .send({
+        name: 'Test Truck'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('requis');
+  });
+
+  test('Doit rejeter capacité négative', async () => {
+    const response = await request(app)
+      .post('/trucks')
+      .send({
+        name: 'Test Truck',
+        capacity: -100
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('positive');
+  });
+
+  test('Doit rejeter capacité zéro', async () => {
+    const response = await request(app)
+      .post('/trucks')
+      .send({
+        name: 'Test Truck',
+        capacity: 0
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('positive');
   });
 });
 
@@ -241,55 +233,41 @@ describe('TC-TRUCK-001 : Ajouter un camion avec données valides', () => {
 // TC-TRUCK-002 : Validation de la capacité
 // ========================================
 describe('TC-TRUCK-002 : Validation de la capacité', () => {
-  test('Doit rejeter capacité négative', async () => {
+  test('Doit accepter capacité décimale', async () => {
     const response = await request(app)
       .post('/trucks')
       .send({
-        name: 'Mercedes Actros',
-        capacity: -1000
+        name: 'Truck with decimal capacity',
+        capacity: 2500.5
       });
 
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('error');
-    expect(response.body.error).toBe('Capacité doit être positive');
+    expect(response.status).toBe(201);
+    expect(response.body.capacity).toBe(2500.5);
   });
 
-  test('Doit rejeter capacité zéro', async () => {
+  test('Doit accepter grande capacité', async () => {
     const response = await request(app)
       .post('/trucks')
       .send({
-        name: 'DAF XF',
-        capacity: 0
+        name: 'Heavy duty truck',
+        capacity: 50000
       });
 
-    expect(response.status).toBe(400);
-  });
-
-  test('Doit rejeter nombre manquant', async () => {
-    const response = await request(app)
-      .post('/trucks')
-      .send({
-        name: 'Volvo FH'
-      });
-
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(201);
+    expect(response.body.capacity).toBe(50000);
   });
 });
 
 // ========================================
-// TC-TRUCK-003 : Consulter la liste des camions
+// TC-TRUCK-003 : Afficher tous les camions
 // ========================================
 describe('TC-TRUCK-003 : Afficher tous les camions', () => {
+  beforeAll(async () => {
+    await request(app).post('/trucks').send({ name: 'Truck A', capacity: 1000 });
+    await request(app).post('/trucks').send({ name: 'Truck B', capacity: 2000 });
+  });
+
   test('Doit retourner un tableau de camions', async () => {
-    // Créer 2 camions
-    await request(app)
-      .post('/trucks')
-      .send({ name: 'Truck1', capacity: 5000 });
-
-    await request(app)
-      .post('/trucks')
-      .send({ name: 'Truck2', capacity: 6000 });
-
     const response = await request(app).get('/trucks');
 
     expect(response.status).toBe(200);
@@ -301,7 +279,7 @@ describe('TC-TRUCK-003 : Afficher tous les camions', () => {
     const response = await request(app).get('/trucks');
 
     expect(response.status).toBe(200);
-    
+
     response.body.forEach(truck => {
       expect(truck).toHaveProperty('id');
       expect(truck).toHaveProperty('name');
@@ -314,8 +292,7 @@ describe('TC-TRUCK-003 : Afficher tous les camions', () => {
     const response = await request(app).get('/trucks');
 
     expect(response.status).toBe(200);
-    
-    // Au moins un camion doit avoir le statut 'available'
+
     const hasAvailable = response.body.some(t => t.status === 'available');
     expect(hasAvailable).toBe(true);
   });

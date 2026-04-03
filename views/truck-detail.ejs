@@ -1,60 +1,61 @@
 <div class="content-header">
-  <h1>🏢 <%= client.name %></h1>
-  <div class="subtitle">Détails du client et historique des commandes</div>
+  <h1>🚛 <%= truck.name %></h1>
+  <div class="subtitle">Détails du camion et historique des commandes</div>
 </div>
 
 <div class="content-nav">
-  <a href="/clients">← Retour aux Clients</a>
+  <a href="/trucks">← Retour aux Camions</a>
   <a href="/orders/add">➕ Nouvelle Commande</a>
-  <a href="/clients/<%= client.id %>/edit" class="btn-edit">✏️ Modifier</a>
-  <button class="btn-delete" onclick="deleteClient(<%= client.id %>, '<%= client.name %>')">🗑️ Supprimer</button>
+  <a href="/trucks/<%= truck.id %>/edit" class="btn-edit">✏️ Modifier</a>
+  <button class="btn-delete" onclick="deleteTruck(<%= truck.id %>, '<%= truck.name %>')">🗑️ Supprimer</button>
 </div>
 
-<div class="client-details">
-  <div class="client-info-card">
+<div class="truck-details">
+  <div class="truck-info-card">
     <h3>📋 Informations générales</h3>
     <div class="info-grid">
       <div class="info-item">
-        <span class="info-label">🏢 Entreprise:</span>
-        <span class="info-value"><%= client.name %></span>
+        <span class="info-label">🚛 Nom:</span>
+        <span class="info-value"><%= truck.name %></span>
       </div>
 
-      <% if (client.contact_person) { %>
+      <% if (truck.license_plate) { %>
         <div class="info-item">
-          <span class="info-label">👤 Contact:</span>
-          <span class="info-value"><%= client.contact_person %></span>
-        </div>
-      <% } %>
-
-      <% if (client.email) { %>
-        <div class="info-item">
-          <span class="info-label">📧 Email:</span>
-          <span class="info-value"><a href="mailto:<%= client.email %>"><%= client.email %></a></span>
-        </div>
-      <% } %>
-
-      <% if (client.phone) { %>
-        <div class="info-item">
-          <span class="info-label">📞 Téléphone:</span>
-          <span class="info-value"><a href="tel:<%= client.phone %>"><%= client.phone %></a></span>
-        </div>
-      <% } %>
-
-      <% if (client.address) { %>
-        <div class="info-item">
-          <span class="info-label">📍 Adresse:</span>
-          <span class="info-value"><%= client.address %></span>
+          <span class="info-label">🔢 Immatriculation:</span>
+          <span class="info-value"><%= truck.license_plate %></span>
         </div>
       <% } %>
 
       <div class="info-item">
-        <span class="info-label">📅 Client depuis:</span>
-        <span class="info-value"><%= new Date(client.created_at).toLocaleDateString('fr-FR') %></span>
+        <span class="info-label">📦 Capacité:</span>
+        <span class="info-value"><%= truck.capacity %> kg</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">📊 Statut:</span>
+        <span class="info-value">
+          <% if (truck.status === 'available') { %>
+            <span class="status-badge status-available">✅ Disponible</span>
+          <% } else if (truck.status === 'in_use') { %>
+            <span class="status-badge status-in-use">🚚 En utilisation</span>
+          <% } else if (truck.status === 'maintenance') { %>
+            <span class="status-badge status-maintenance">🔧 En maintenance</span>
+          <% } else if (truck.status === 'out_of_service') { %>
+            <span class="status-badge status-out-of-service">❌ Hors service</span>
+          <% } else { %>
+            <span class="status-badge">❓ <%= truck.status %></span>
+          <% } %>
+        </span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">📅 Ajouté le:</span>
+        <span class="info-value"><%= new Date(truck.created_at).toLocaleDateString('fr-FR') %></span>
       </div>
     </div>
   </div>
 
-  <div class="client-orders">
+  <div class="truck-orders">
     <h3>📦 Historique des commandes</h3>
 
     <% if (orders && orders.length > 0) { %>
@@ -64,6 +65,9 @@
             <div class="order-info">
               <h4>Commande #<%= order.id %></h4>
               <p><%= order.origin %> → <%= order.destination %></p>
+              <% if (order.client_name) { %>
+                <small>🏢 <%= order.client_name %></small>
+              <% } %>
             </div>
             <div class="order-status">
               <span class="status-badge status-<%= order.dynamic_status %>">
@@ -77,10 +81,6 @@
           </div>
 
           <div class="order-details">
-            <% if (order.truck_name) { %>
-              <span>🚛 <%= order.truck_name %></span>
-            <% } %>
-
             <% if (order.departure_time) { %>
               <span>🕐 Départ: <%= new Date(order.departure_time).toLocaleString('fr-FR') %></span>
             <% } %>
@@ -93,7 +93,7 @@
       <% }); %>
     <% } else { %>
       <div class="no-orders">
-        <p>📦 Aucune commande pour ce client</p>
+        <p>📦 Aucune commande pour ce camion</p>
         <a href="/orders/add" class="btn-create-order">Créer une commande</a>
       </div>
     <% } %>
@@ -101,13 +101,13 @@
 </div>
 
 <style>
-  .client-details {
+  .truck-details {
     display: grid;
     gap: 30px;
     margin-top: 20px;
   }
 
-  .client-info-card {
+  .truck-info-card {
     background: white;
     border-radius: 12px;
     padding: 25px;
@@ -115,7 +115,7 @@
     border: 1px solid #e0e0e0;
   }
 
-  .client-info-card h3 {
+  .truck-info-card h3 {
     margin: 0 0 20px 0;
     color: #333;
     font-size: 1.3rem;
@@ -153,16 +153,19 @@
     flex: 1;
   }
 
-  .info-value a {
-    color: #1976d2;
-    text-decoration: none;
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
   }
 
-  .info-value a:hover {
-    text-decoration: underline;
-  }
+  .status-available { background-color: #e8f5e9; color: #2e7d32; }
+  .status-in-use { background-color: #fff3e0; color: #e65100; }
+  .status-maintenance { background-color: #fff9c4; color: #f57f17; }
+  .status-out-of-service { background-color: #ffebee; color: #c62828; }
 
-  .client-orders {
+  .truck-orders {
     background: white;
     border-radius: 12px;
     padding: 25px;
@@ -170,7 +173,7 @@
     border: 1px solid #e0e0e0;
   }
 
-  .client-orders h3 {
+  .truck-orders h3 {
     margin: 0 0 20px 0;
     color: #333;
     font-size: 1.3rem;
@@ -200,9 +203,14 @@
   }
 
   .order-info p {
-    margin: 0;
+    margin: 0 0 5px 0;
     color: #666;
     font-size: 0.9rem;
+  }
+
+  .order-info small {
+    color: #888;
+    font-size: 0.8rem;
   }
 
   .order-details {
@@ -281,7 +289,7 @@
   .status-completed { background-color: #e8f5e9; color: #2e7d32; }
 
   @media (max-width: 768px) {
-    .client-details {
+    .truck-details {
       grid-template-columns: 1fr;
     }
 
@@ -313,9 +321,9 @@
 </style>
 
 <script>
-function deleteClient(clientId, clientName) {
-  if (confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ?\n\n⚠️ Cette action est irréversible et supprimera également toutes les données associées.`)) {
-    fetch(`/clients/${clientId}`, {
+function deleteTruck(truckId, truckName) {
+  if (confirm(`Êtes-vous sûr de vouloir supprimer le camion "${truckName}" ?\n\n⚠️ Cette action est irréversible et supprimera également toutes les données associées.`)) {
+    fetch(`/trucks/${truckId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -326,8 +334,8 @@ function deleteClient(clientId, clientName) {
       if (data.error) {
         alert('Erreur: ' + data.error);
       } else {
-        alert('Client supprimé avec succès !');
-        window.location.href = '/clients';
+        alert('Camion supprimé avec succès !');
+        window.location.href = '/trucks';
       }
     })
     .catch(error => {

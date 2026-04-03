@@ -21,7 +21,7 @@
       <% trucks.forEach(truck => { %>
         <tr>
           <td><%= truck.id %></td>
-          <td><%= truck.name %></td>
+          <td><a href="/trucks/<%= truck.id %>" style="color: #1976d2; text-decoration: none; font-weight: 500;"><%= truck.name %></a></td>
           <td><%= truck.capacity %> kg</td>
           <td>
             <span class="status-badge status-<%= truck.status %>">
