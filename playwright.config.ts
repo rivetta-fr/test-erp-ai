@@ -10,7 +10,7 @@ export default defineConfig({
   // Serveur web à tester
   webServer: {
     command: 'npm start',
-    url: 'http://localhost:3001',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
@@ -32,7 +32,7 @@ export default defineConfig({
 
   use: {
     // URL de base
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:3000',
     
     // Capture
     screenshot: 'only-on-failure',

@@ -25,7 +25,7 @@
 **Description:** L'application doit être accessible via un navigateur web moderne.
 
 **Critères d'acceptation:**
-- ✓ Accessible via http://localhost:3001
+- ✓ Accessible via http://localhost:3000
 - ✓ Compatible avec Chrome 90+, Firefox 88+, Edge 90+
 - ✓ Interface responsive sur écrans 1920x1080
 - ✓ Tous les formulaires accessibles au clavier
@@ -461,7 +461,7 @@
 - [ ] Package.json avec dépendances correctes
 - [ ] npm install fonctionnel
 - [ ] npm start démarre serveur
-- [ ] Application accessible sur :3001
+- [ ] Application accessible sur :3000
 - [ ] Pas d'erreur au démarrage
 
 ---

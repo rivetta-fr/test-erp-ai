@@ -10,7 +10,7 @@ Projet ERP simplifié dédié au **transport et à la logistique** avec gestion 
 - Database : SQLite3
 - Frontend : EJS + HTML5/CSS3
 - Testing : Jest + supertest
-- Port : 3001
+- Port : 3000
 
 ---
 

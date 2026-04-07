@@ -38,7 +38,7 @@ npx playwright install
 npm start
 ```
 
-Le serveur démarre sur : **http://localhost:3001** ✅
+Le serveur démarre sur : **http://localhost:3000** ✅
 
 ### Étape 4 : Exécuter les tests
 
@@ -296,7 +296,7 @@ npx playwright test --timeout 60000
 ### Problem 2 : Serveur Non Disponible
 
 ```
-Connection refused 127.0.0.1:3001
+Connection refused 127.0.0.1:3000
 ```
 
 **Solution** :

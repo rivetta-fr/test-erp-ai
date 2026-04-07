@@ -30,7 +30,7 @@ tests/
 
 ```
 E2E-TRUCK-001 : Ajouter Camion
-├─ URL : http://localhost:3001
+├─ URL : http://localhost:3000
 ├─ Actions :
 │  ├─ Clic sur "Ajouter Camion"
 │  ├─ Remplir : name = "Volvo FH16 E2E"
@@ -272,13 +272,13 @@ TOTAL       | 30+        | 17+       | 47+      |
 
 **Préconditions** :
 
-- Application démarrée sur http://localhost:3001
+- Application démarrée sur http://localhost:3000
 - Page accessible
 - Navigateur supporté (Chrome, Firefox, Safari)
 
 **Étapes** :
 
-1. Naviguer vers http://localhost:3001
+1. Naviguer vers http://localhost:3000
 2. Attendre le chargement complet (networkidle)
 3. Cliquer sur le bouton "Ajouter Camion"
 4. Remplir le champ "Nom" avec "Volvo FH16 E2E"

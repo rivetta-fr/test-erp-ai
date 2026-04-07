@@ -136,7 +136,7 @@ npx playwright test --watch
 
 ```typescript
 // Serveur web testé
-webServer: "http://localhost:3001";
+webServer: "http://localhost:3000";
 
 // Timeout
 timeout: 30 * 1000;
@@ -286,7 +286,7 @@ npm run test:e2e:debug
 
 ### Serveur Non Disponible
 
-**Symptôme** : `Connection refused 127.0.0.1:3001`
+**Symptôme** : `Connection refused 127.0.0.1:3000`
 
 **Solution** :
 

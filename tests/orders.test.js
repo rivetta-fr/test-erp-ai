@@ -16,7 +16,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const TEST_PORT = 3001;
+const TEST_PORT = 3000;
 const TEST_DB = path.join(__dirname, '../test-orders.db');
 
 const express = require('express');

@@ -53,7 +53,7 @@
 | --------------- | ---------------------- |
 | OS              | Windows 10/11 ou Linux |
 | Node.js         | Version 24.x           |
-| Port            | 3001                   |
+| Port            | 3000                   |
 | Base de données | SQLite (test.db)       |
 | Navigateur      | Chrome/Firefox/Edge    |
 
@@ -447,7 +447,7 @@ cd C:\Dev\ERP-test
 npm start
 
 # 2. Ouvrir le navigateur
-http://localhost:3001
+http://localhost:3000
 
 # 3. Initialiser avec données de test
 # (Voir section Données de test)
